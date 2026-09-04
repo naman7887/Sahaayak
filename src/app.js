@@ -4,6 +4,7 @@ const cookieParser = require("cookie-parser");
 
 const authRoutes = require("./routes/auth.routes");
 const workerRoutes = require("./routes/worker.routes");
+const serviceRoutes = require("./routes/service.routes");
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/workers", workerRoutes);
+app.use("/api/services", serviceRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({
