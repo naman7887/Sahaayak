@@ -117,10 +117,59 @@ Authorization: Bearer <JWT_TOKEN>
   "availability": true
 }
 
+## 8. Service APIs
 
+GET /services
+
+Access: Public
+
+## 9. Get Service By ID
+
+GET /services/:id
+
+Access: Public
+
+## 10. Create Service
+
+POST /services
+
+Access: Authenticated
+
+Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+## Body
+{
+  "name": "Fan Repair",
+  "category": "Electrical",
+  "description": "Ceiling fan repair and installation",
+  "basePrice": 300,
+  "estimatedDuration": 60
+}
+
+## 11. Update Service
+
+PUT /services/:id
+
+Access: Authenticated
+
+Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+12. Delete / Deactivate Service
+
+DELETE /services/:id
+
+Access: Authenticated
+
+Header
+
+Authorization: Bearer <JWT_TOKEN>
 # Health Check
 
-## 8. Check Backend Status
+## 13. Check Backend Status
 
 GET /health
 
