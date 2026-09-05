@@ -7,6 +7,7 @@ const workerRoutes = require("./routes/worker.routes");
 const serviceRoutes = require("./routes/service.routes");
 const bookingRoutes = require("./routes/booking.routes");
 const paymentRoutes = require("./routes/payment.routes");
+const welfareRoutes = require("./routes/welfare.routes");
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use("/api/workers", workerRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/welfare", welfareRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({

@@ -409,10 +409,93 @@ failed
 refunded
 
 
+# Welfare APIs
+
+## 25. Get All Welfare Schemes
+
+GET /welfare
+
+Access: Public
+
+### Query Parameter
+
+category
+
+Example:
+
+GET /welfare?category=health
+
+
+## 26. Get Welfare Scheme By ID
+
+GET /welfare/:id
+
+Access: Public
+
+
+## 27. Create Welfare Scheme
+
+POST /welfare
+
+Access: Authenticated
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+### Body
+
+{
+  "title": "Health Insurance Scheme",
+  "description": "Healthcare support scheme for eligible workers",
+  "provider": "Government",
+  "category": "Health",
+  "benefits": "Financial assistance for healthcare expenses",
+  "eligibility": "Eligible registered workers",
+  "requiredDocuments": [
+    "Aadhaar Card",
+    "Income Certificate"
+  ],
+  "applicationProcess": "Apply through the official government portal",
+  "applicationUrl": "https://example.gov.in"
+}
+
+
+## 28. Update Welfare Scheme
+
+PUT /welfare/:id
+
+Access: Authenticated
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+### Body
+
+{
+  "title": "Updated Health Insurance Scheme",
+  "description": "Updated healthcare support scheme",
+  "benefits": "Updated benefits",
+  "eligibility": "Updated eligibility"
+}
+
+
+## 29. Delete / Deactivate Welfare Scheme
+
+DELETE /welfare/:id
+
+Access: Authenticated
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+
 
 # Health Check
 
-## 25. Check Backend Status
+## 30. Check Backend Status
 
 GET /health
 
