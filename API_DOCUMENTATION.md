@@ -328,10 +328,91 @@ Access: Authenticated Customer
 Authorization: Bearer <JWT_TOKEN>
 
 
+# Payment APIs
+
+All payment APIs require:
+
+Authorization: Bearer <JWT_TOKEN>
+
+
+## 21. Create Payment
+
+POST /payments
+
+Access: Authenticated Customer
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+### Body
+
+{
+  "booking": "<BOOKING_ID>",
+  "paymentMethod": "upi"
+}
+
+
+## 22. Get My Payments
+
+GET /payments/my
+
+Access: Authenticated Customer
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+
+## 23. Get Payment By ID
+
+GET /payments/:id
+
+Access: Authenticated Customer
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+
+## 24. Update Payment Status
+
+PATCH /payments/:id/status
+
+Access: Authenticated Customer
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+### Body
+
+{
+  "paymentStatus": "paid",
+  "transactionId": "TXN123456789"
+}
+
+
+Possible payment methods:
+
+cash
+upi
+card
+online
+
+
+Possible payment statuses:
+
+pending
+paid
+failed
+refunded
+
+
 
 # Health Check
 
-## 21. Check Backend Status
+## 25. Check Backend Status
 
 GET /health
 
