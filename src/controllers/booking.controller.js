@@ -1,8 +1,12 @@
 const Booking = require("../models/Booking");
 const Service = require("../models/Service");
 const { findMatchingWorkers } = require("../services/matching.service");
+const { createNotification } = require("../services/notification.service");
 
-// Create a booking
+// ======================================
+// CREATE BOOKING
+// ======================================
+
 const createBooking = async (req, res) => {
   try {
     const {
@@ -13,7 +17,6 @@ const createBooking = async (req, res) => {
       description,
     } = req.body;
 
-    // Validate required fields
     if (
       !service ||
       !scheduledDate ||
@@ -28,7 +31,6 @@ const createBooking = async (req, res) => {
       });
     }
 
-    // Validate coordinates
     if (
       !Array.isArray(location.coordinates) ||
       location.coordinates.length !== 2
@@ -39,7 +41,6 @@ const createBooking = async (req, res) => {
       });
     }
 
-    // Validate scheduled date
     const bookingDate = new Date(scheduledDate);
 
     if (isNaN(bookingDate.getTime())) {
@@ -56,7 +57,6 @@ const createBooking = async (req, res) => {
       });
     }
 
-    // Check service
     const serviceExists = await Service.findOne({
       _id: service,
       isActive: true,
@@ -69,7 +69,6 @@ const createBooking = async (req, res) => {
       });
     }
 
-    // Find matching workers
     const matchingWorkers = await findMatchingWorkers(
       location,
       serviceExists.category,
@@ -79,9 +78,6 @@ const createBooking = async (req, res) => {
     const matchedWorker =
       matchingWorkers.length > 0 ? matchingWorkers[0] : null;
 
-    // Create booking
-    // Price is taken from the service in the database,
-    // not from the frontend.
     const booking = await Booking.create({
       customer: req.user._id,
       worker: matchedWorker ? matchedWorker.user._id : null,
@@ -94,7 +90,17 @@ const createBooking = async (req, res) => {
       status: "pending",
     });
 
-    // Populate booking data
+    // Notify matched worker
+    if (matchedWorker) {
+      await createNotification({
+        recipient: matchedWorker.user._id,
+        type: "booking",
+        title: "New Booking Assigned",
+        message: `You have a new ${serviceExists.name} booking request.`,
+        booking: booking._id,
+      });
+    }
+
     const populatedBooking = await Booking.findById(booking._id)
       .populate("customer", "name email phone")
       .populate("worker", "name email phone")
@@ -122,8 +128,10 @@ const createBooking = async (req, res) => {
   }
 };
 
+// ======================================
+// GET MY BOOKINGS
+// ======================================
 
-// Get customer's bookings
 const getMyBookings = async (req, res) => {
   try {
     const bookings = await Booking.find({
@@ -152,8 +160,10 @@ const getMyBookings = async (req, res) => {
   }
 };
 
+// ======================================
+// GET WORKER BOOKINGS
+// ======================================
 
-// Get bookings assigned to worker
 const getWorkerBookings = async (req, res) => {
   try {
     const bookings = await Booking.find({
@@ -176,14 +186,16 @@ const getWorkerBookings = async (req, res) => {
 
     res.status(500).json({
       success: false,
-      message: "Failed to fetch worker bookings",
+      message: "Failed to fetch bookings",
       error: error.message,
     });
   }
 };
 
+// ======================================
+// GET BOOKING BY ID
+// ======================================
 
-// Get booking by ID
 const getBookingById = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id)
@@ -233,8 +245,10 @@ const getBookingById = async (req, res) => {
   }
 };
 
+// ======================================
+// ACCEPT BOOKING
+// ======================================
 
-// Accept booking
 const acceptBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
@@ -268,6 +282,15 @@ const acceptBooking = async (req, res) => {
 
     await booking.save();
 
+    // Notify customer
+    await createNotification({
+      recipient: booking.customer,
+      type: "booking",
+      title: "Booking Accepted",
+      message: "Your booking has been accepted by the worker.",
+      booking: booking._id,
+    });
+
     const updatedBooking = await Booking.findById(booking._id)
       .populate("customer", "name email phone")
       .populate("worker", "name email phone")
@@ -292,8 +315,10 @@ const acceptBooking = async (req, res) => {
   }
 };
 
+// ======================================
+// REJECT BOOKING
+// ======================================
 
-// Reject booking
 const rejectBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
@@ -322,11 +347,19 @@ const rejectBooking = async (req, res) => {
       });
     }
 
-    // Remove worker assignment when rejected
     booking.worker = null;
     booking.status = "rejected";
 
     await booking.save();
+
+    // Notify customer
+    await createNotification({
+      recipient: booking.customer,
+      type: "booking",
+      title: "Booking Rejected",
+      message: "Your booking request was rejected by the worker.",
+      booking: booking._id,
+    });
 
     const updatedBooking = await Booking.findById(booking._id)
       .populate("customer", "name email phone")
@@ -352,8 +385,10 @@ const rejectBooking = async (req, res) => {
   }
 };
 
+// ======================================
+// UPDATE BOOKING STATUS
+// ======================================
 
-// Update booking status
 const updateBookingStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -382,9 +417,7 @@ const updateBookingStatus = async (req, res) => {
     }
 
     const userId = req.user._id.toString();
-
     const customerId = booking.customer.toString();
-
     const workerId = booking.worker
       ? booking.worker.toString()
       : null;
@@ -399,7 +432,6 @@ const updateBookingStatus = async (req, res) => {
       });
     }
 
-    // Customer can only cancel a booking
     if (isCustomer) {
       if (status !== "cancelled") {
         return res.status(403).json({
@@ -416,7 +448,6 @@ const updateBookingStatus = async (req, res) => {
       }
     }
 
-    // Worker can update work progress
     if (isWorker) {
       const validWorkerTransitions = {
         accepted: ["in-progress", "cancelled"],
@@ -437,6 +468,39 @@ const updateBookingStatus = async (req, res) => {
     booking.status = status;
 
     await booking.save();
+
+    // Notify the other participant
+    if (status === "completed") {
+      await createNotification({
+        recipient: booking.customer,
+        type: "booking",
+        title: "Booking Completed",
+        message: "Your service booking has been completed.",
+        booking: booking._id,
+      });
+    } else if (status === "in-progress") {
+      await createNotification({
+        recipient: booking.customer,
+        type: "booking",
+        title: "Service In Progress",
+        message: "Your worker has started working on your booking.",
+        booking: booking._id,
+      });
+    } else if (status === "cancelled") {
+      const recipient = isCustomer
+        ? booking.worker
+        : booking.customer;
+
+      if (recipient) {
+        await createNotification({
+          recipient,
+          type: "booking",
+          title: "Booking Cancelled",
+          message: "A booking you are involved in has been cancelled.",
+          booking: booking._id,
+        });
+      }
+    }
 
     const updatedBooking = await Booking.findById(booking._id)
       .populate("customer", "name email phone")
@@ -462,8 +526,10 @@ const updateBookingStatus = async (req, res) => {
   }
 };
 
+// ======================================
+// CANCEL BOOKING
+// ======================================
 
-// Cancel booking
 const cancelBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
@@ -493,6 +559,17 @@ const cancelBooking = async (req, res) => {
 
     await booking.save();
 
+    // Notify assigned worker
+    if (booking.worker) {
+      await createNotification({
+        recipient: booking.worker,
+        type: "booking",
+        title: "Booking Cancelled",
+        message: "The customer has cancelled the booking.",
+        booking: booking._id,
+      });
+    }
+
     const updatedBooking = await Booking.findById(booking._id)
       .populate("customer", "name email phone")
       .populate("worker", "name email phone")
@@ -516,7 +593,6 @@ const cancelBooking = async (req, res) => {
     });
   }
 };
-
 
 module.exports = {
   createBooking,

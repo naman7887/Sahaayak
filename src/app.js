@@ -13,6 +13,7 @@ const adminRoutes = require("./routes/admin.routes");
 const reviewRoutes = require("./routes/review.routes");
 const insuranceRoutes = require("./routes/insurance.routes");
 const userRoutes = require("./routes/user.routes");
+const notificationRoutes = require("./routes/notification.routes");
 
 const app = express();
 
@@ -31,6 +32,8 @@ app.use("/api/schemes", schemeRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/insurance", insuranceRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/notifications", notificationRoutes);
+
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({

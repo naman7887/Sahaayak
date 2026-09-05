@@ -845,9 +845,50 @@ language
 Users cannot change their role, verification status, email or password through this endpoint.
 
 
+# Notification APIs
+
+## 47. Get My Notifications
+
+GET /notifications
+
+Access: Authenticated User
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+Returns all notifications belonging to the currently logged-in user.
+
+
+## 48. Mark Notification As Read
+
+PATCH /notifications/:id/read
+
+Access: Authenticated User
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+Marks a specific notification as read.
+
+
+## 49. Mark All Notifications As Read
+
+PATCH /notifications/read-all
+
+Access: Authenticated User
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+Marks all unread notifications belonging to the current user as read.
+
+
 # Health Check
 
-## 47. Check Backend Status
+## 50. Check Backend Status
 
 GET /health
 

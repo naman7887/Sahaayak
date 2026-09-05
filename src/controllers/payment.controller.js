@@ -1,5 +1,6 @@
 const Payment = require("../models/Payment");
 const Booking = require("../models/Booking");
+const { createNotification } = require("../services/notification.service");
 
 // Create a payment record
 const createPayment = async (req, res) => {
@@ -188,6 +189,12 @@ const updatePaymentStatus = async (req, res) => {
     }
 
     await payment.save();
+      await createNotification({
+      recipient: payment.customer,
+      type: "payment",
+      title: "Payment Status Updated",
+      message: `Your payment status has been updated to ${paymentStatus}.`,
+   });
 
     const updatedPayment = await Payment.findById(payment._id)
       .populate("customer", "name email phone")

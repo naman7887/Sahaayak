@@ -1,6 +1,10 @@
 const Worker = require("../models/Worker");
+const { createNotification } = require("./notification.service");
 
-// Get workers by verification status
+// ======================================
+// GET WORKERS BY VERIFICATION STATUS
+// ======================================
+
 const getWorkersByStatus = async (verificationStatus = "pending") => {
   const allowedStatuses = ["pending", "verified", "rejected"];
 
@@ -15,7 +19,10 @@ const getWorkersByStatus = async (verificationStatus = "pending") => {
     .sort({ createdAt: -1 });
 };
 
-// Update worker verification status
+// ======================================
+// UPDATE WORKER VERIFICATION STATUS
+// ======================================
+
 const updateWorkerVerificationStatus = async (
   workerId,
   verificationStatus
@@ -40,6 +47,28 @@ const updateWorkerVerificationStatus = async (
   }
 
   await worker.save();
+
+  // Notify worker when verification is approved
+  if (verificationStatus === "verified") {
+    await createNotification({
+      recipient: worker.user,
+      type: "verification",
+      title: "Worker Verification Approved",
+      message:
+        "Your worker profile has been verified. You can now receive service bookings.",
+    });
+  }
+
+  // Notify worker when verification is rejected
+  if (verificationStatus === "rejected") {
+    await createNotification({
+      recipient: worker.user,
+      type: "verification",
+      title: "Worker Verification Rejected",
+      message:
+        "Your worker profile verification was rejected. Please review your profile information and try again.",
+    });
+  }
 
   return await Worker.findById(worker._id).populate(
     "user",
