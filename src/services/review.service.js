@@ -1,5 +1,6 @@
 const Review = require("../models/Review");
 const Booking = require("../models/Booking");
+const Worker = require("../models/Worker");
 
 // Create a review for a completed booking
 const createReview = async (bookingId, customerId, rating, comment) => {
@@ -29,13 +30,41 @@ const createReview = async (bookingId, customerId, rating, comment) => {
     throw new Error("A review already exists for this booking");
   }
 
-  return await Review.create({
+  const review = await Review.create({
     booking: bookingId,
     customer: customerId,
     worker: booking.worker,
     rating,
     comment: comment || "",
   });
+
+  // Recalculate the worker's average rating
+  const ratingStats = await Review.aggregate([
+    {
+      $match: {
+        worker: booking.worker,
+      },
+    },
+    {
+      $group: {
+        _id: "$worker",
+        averageRating: { $avg: "$rating" },
+      },
+    },
+  ]);
+
+  if (ratingStats.length > 0) {
+    await Worker.updateOne(
+      { user: booking.worker },
+      {
+        $set: {
+          rating: Number(ratingStats[0].averageRating.toFixed(2)),
+        },
+      }
+    );
+  }
+
+  return review;
 };
 
 // Get reviews for a worker

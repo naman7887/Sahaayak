@@ -155,7 +155,7 @@ Access: Public
 
 POST /services
 
-Access: Authenticated
+Access: Authenticated Admin
 
 ### Header
 
@@ -176,7 +176,7 @@ Authorization: Bearer <JWT_TOKEN>
 
 PUT /services/:id
 
-Access: Authenticated
+Access: Authenticated Admin
 
 ### Header
 
@@ -197,7 +197,7 @@ Authorization: Bearer <JWT_TOKEN>
 
 DELETE /services/:id
 
-Access: Authenticated
+Access: Authenticated Admin
 
 ### Header
 
@@ -216,7 +216,7 @@ Authorization: Bearer <JWT_TOKEN>
 
 POST /bookings
 
-Access: Authenticated
+Access: Authenticated Customer
 
 ### Header
 
@@ -241,7 +241,7 @@ Authorization: Bearer <JWT_TOKEN>
 
 GET /bookings/my
 
-Access: Authenticated
+Access: Authenticated Customer
 
 ### Header
 
@@ -379,7 +379,7 @@ Authorization: Bearer <JWT_TOKEN>
 
 PATCH /payments/:id/status
 
-Access: Authenticated Customer
+Access: Authenticated Admin
 
 ### Header
 
@@ -437,7 +437,7 @@ Access: Public
 
 POST /welfare
 
-Access: Authenticated
+Access: Authenticated Admin
 
 ### Header
 
@@ -465,7 +465,7 @@ Authorization: Bearer <JWT_TOKEN>
 
 PUT /welfare/:id
 
-Access: Authenticated
+Access: Authenticated Admin
 
 ### Header
 
@@ -485,7 +485,7 @@ Authorization: Bearer <JWT_TOKEN>
 
 DELETE /welfare/:id
 
-Access: Authenticated
+Access: Authenticated Admin
 
 ### Header
 
@@ -520,7 +520,7 @@ Access: Public
 
 POST /schemes
 
-Access: Authenticated
+Access: Authenticated Admin
 
 ### Header
 
@@ -548,7 +548,7 @@ Authorization: Bearer <JWT_TOKEN>
 
 PUT /schemes/:id
 
-Access: Authenticated
+Access: Authenticated Admin
 
 ### Header
 
@@ -568,7 +568,7 @@ Authorization: Bearer <JWT_TOKEN>
 
 DELETE /schemes/:id
 
-Access: Authenticated
+Access: Authenticated Admin
 
 ### Header
 
@@ -890,7 +890,7 @@ Marks all unread notifications belonging to the current user as read.
 
 ## 50. Check Backend Status
 
-GET /health
+GET /api/health
 
 Access: Public
 

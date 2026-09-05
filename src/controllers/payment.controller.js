@@ -2,7 +2,7 @@ const Payment = require("../models/Payment");
 const Booking = require("../models/Booking");
 const { createNotification } = require("../services/notification.service");
 
-// Create a payment record
+// CREATE PAYMENT
 const createPayment = async (req, res) => {
   try {
     const { booking, paymentMethod } = req.body;
@@ -36,11 +36,11 @@ const createPayment = async (req, res) => {
     if (bookingData.customer.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
-        message: "You are not authorized to create payment for this booking",
+        message:
+          "You are not authorized to create payment for this booking",
       });
     }
 
-    // Payment should not be created for cancelled bookings
     if (bookingData.status === "cancelled") {
       return res.status(400).json({
         success: false,
@@ -87,7 +87,7 @@ const createPayment = async (req, res) => {
   }
 };
 
-// Get customer's payments
+// GET MY PAYMENTS
 const getMyPayments = async (req, res) => {
   try {
     const payments = await Payment.find({
@@ -112,7 +112,7 @@ const getMyPayments = async (req, res) => {
   }
 };
 
-// Get payment by ID
+// GET PAYMENT BY ID
 const getPaymentById = async (req, res) => {
   try {
     const payment = await Payment.findById(req.params.id)
@@ -126,6 +126,7 @@ const getPaymentById = async (req, res) => {
       });
     }
 
+    // Users can only view their own payment
     if (payment.customer._id.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
@@ -148,12 +149,18 @@ const getPaymentById = async (req, res) => {
   }
 };
 
-// Update payment status
+// UPDATE PAYMENT STATUS
+// Admin only - authorization is handled in payment.routes.js
 const updatePaymentStatus = async (req, res) => {
   try {
     const { paymentStatus, transactionId } = req.body;
 
-    const allowedStatuses = ["pending", "paid", "failed", "refunded"];
+    const allowedStatuses = [
+      "pending",
+      "paid",
+      "failed",
+      "refunded",
+    ];
 
     if (!allowedStatuses.includes(paymentStatus)) {
       return res.status(400).json({
@@ -171,13 +178,6 @@ const updatePaymentStatus = async (req, res) => {
       });
     }
 
-    if (payment.customer.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: "You are not authorized to update this payment",
-      });
-    }
-
     payment.paymentStatus = paymentStatus;
 
     if (transactionId) {
@@ -188,13 +188,19 @@ const updatePaymentStatus = async (req, res) => {
       payment.paidAt = new Date();
     }
 
+    if (paymentStatus !== "paid") {
+      payment.paidAt = null;
+    }
+
     await payment.save();
-      await createNotification({
+
+    // Notify the customer about the payment status change
+    await createNotification({
       recipient: payment.customer,
       type: "payment",
       title: "Payment Status Updated",
       message: `Your payment status has been updated to ${paymentStatus}.`,
-   });
+    });
 
     const updatedPayment = await Payment.findById(payment._id)
       .populate("customer", "name email phone")

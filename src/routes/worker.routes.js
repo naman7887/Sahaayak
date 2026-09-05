@@ -1,10 +1,10 @@
 const express = require("express");
 
 const {
-  createWorkerProfile,
-  getMyWorkerProfile,
+  getWorkerProfile,
   updateWorkerProfile,
-  updateAvailability
+  updateWorkerAvailability,
+  getAvailableWorkers,
 } = require("../controllers/worker.controller");
 
 const protect = require("../middleware/auth.middleware");
@@ -12,24 +12,19 @@ const authorizeRoles = require("../middleware/role.middleware");
 
 const router = express.Router();
 
+// ==========================================
+// WORKER PROFILE
+// ==========================================
 
-// Worker profile
-router.post(
-  "/profile",
-  protect,
-  authorizeRoles("worker"),
-  createWorkerProfile
-);
-
-
+// Get own worker profile
 router.get(
   "/profile",
   protect,
   authorizeRoles("worker"),
-  getMyWorkerProfile
+  getWorkerProfile
 );
 
-
+// Update own worker profile
 router.put(
   "/profile",
   protect,
@@ -37,14 +32,27 @@ router.put(
   updateWorkerProfile
 );
 
+// ==========================================
+// WORKER AVAILABILITY
+// ==========================================
 
-// Availability
+// Update worker availability
 router.patch(
   "/availability",
   protect,
   authorizeRoles("worker"),
-  updateAvailability
+  updateWorkerAvailability
 );
 
+// ==========================================
+// AVAILABLE WORKERS
+// ==========================================
+
+// Get all available workers
+router.get(
+  "/available",
+  protect,
+  getAvailableWorkers
+);
 
 module.exports = router;

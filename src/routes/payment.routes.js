@@ -8,6 +8,7 @@ const {
 } = require("../controllers/payment.controller");
 
 const protect = require("../middleware/auth.middleware");
+const authorizeRoles = require("../middleware/role.middleware");
 
 const router = express.Router();
 
@@ -18,6 +19,12 @@ router.use(protect);
 router.post("/", createPayment);
 router.get("/my", getMyPayments);
 router.get("/:id", getPaymentById);
-router.patch("/:id/status", updatePaymentStatus);
+
+// Only admin can update payment status
+router.patch(
+  "/:id/status",
+  authorizeRoles("admin"),
+  updatePaymentStatus
+);
 
 module.exports = router;

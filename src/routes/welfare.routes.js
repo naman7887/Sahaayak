@@ -9,6 +9,7 @@ const {
 } = require("../controllers/welfare.controller");
 
 const protect = require("../middleware/auth.middleware");
+const authorizeRoles = require("../middleware/role.middleware");
 
 const router = express.Router();
 
@@ -16,9 +17,9 @@ const router = express.Router();
 router.get("/", getWelfareSchemes);
 router.get("/:id", getWelfareSchemeById);
 
-// Protected APIs
-router.post("/", protect, createWelfareScheme);
-router.put("/:id", protect, updateWelfareScheme);
-router.delete("/:id", protect, deleteWelfareScheme);
+// Admin-only management APIs
+router.post("/", protect, authorizeRoles("admin"), createWelfareScheme);
+router.put("/:id", protect, authorizeRoles("admin"), updateWelfareScheme);
+router.delete("/:id", protect, authorizeRoles("admin"), deleteWelfareScheme);
 
 module.exports = router;

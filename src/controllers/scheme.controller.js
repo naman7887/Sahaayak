@@ -1,6 +1,6 @@
 const {
   getAllSchemes,
-  getSchemeById,
+  getSchemeById: getSchemeByIdService,
   createScheme: createSchemeService,
   updateScheme: updateSchemeService,
   deactivateScheme,
@@ -32,7 +32,7 @@ const getSchemes = async (req, res) => {
 // Get scheme by ID
 const getSchemeById = async (req, res) => {
   try {
-    const scheme = await getSchemeById(req.params.id);
+    const scheme = await getSchemeByIdService(req.params.id);
 
     if (!scheme) {
       return res.status(404).json({

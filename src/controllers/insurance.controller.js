@@ -1,6 +1,6 @@
 const {
   getAllInsurancePlans,
-  getInsurancePlanById,
+  getInsurancePlanById: getInsurancePlanByIdService,
   createInsurancePlan: createInsurancePlanService,
   updateInsurancePlan: updateInsurancePlanService,
   deactivateInsurancePlan,
@@ -36,7 +36,7 @@ const getInsurancePlans = async (req, res) => {
 
 const getInsurancePlanById = async (req, res) => {
   try {
-    const plan = await getInsurancePlanById(req.params.id);
+    const plan = await getInsurancePlanByIdService(req.params.id);
 
     if (!plan) {
       return res.status(404).json({

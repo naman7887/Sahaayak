@@ -1,224 +1,130 @@
-const Worker = require("../models/Worker");
 const User = require("../models/User");
 
-// ======================================
-// CREATE WORKER PROFILE
-// ======================================
-
-const createWorkerProfile = async (req, res) => {
+// =====================================================
+// GET WORKER PROFILE
+// GET /api/workers/profile
+// Protected - Worker
+// =====================================================
+const getWorkerProfile = async (req, res) => {
   try {
-    const {
-      occupation,
-      skills,
-      experience,
-      certifications,
-      serviceRadius,
-      location
-    } = req.body;
-
-    // Check if user is actually a worker
-    if (req.user.role !== "worker") {
-      return res.status(403).json({
-        success: false,
-        message: "Only workers can create a worker profile"
-      });
-    }
-
-    // Check if profile already exists
-    const existingWorker = await Worker.findOne({
-      user: req.user._id
-    });
-
-    if (existingWorker) {
-      return res.status(409).json({
-        success: false,
-        message: "Worker profile already exists"
-      });
-    }
-
-    // Basic location validation
-    if (
-      !location ||
-      !Array.isArray(location.coordinates) ||
-      location.coordinates.length !== 2
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Valid location coordinates are required"
-      });
-    }
-
-    const worker = await Worker.create({
-      user: req.user._id,
-      occupation,
-      skills: skills || [],
-      experience: experience || 0,
-      certifications: certifications || [],
-      serviceRadius: serviceRadius || 10,
-      location: {
-        type: "Point",
-        coordinates: location.coordinates
-      }
-    });
-
-    return res.status(201).json({
-      success: true,
-      message: "Worker profile created successfully",
-      worker
-    });
-
-  } catch (error) {
-    console.error("Create worker profile error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Server error while creating worker profile"
-    });
-  }
-};
-
-
-// ======================================
-// GET MY WORKER PROFILE
-// ======================================
-
-const getMyWorkerProfile = async (req, res) => {
-  try {
-    const worker = await Worker.findOne({
-      user: req.user._id
-    }).populate(
-      "user",
-      "name email phone language isVerified"
-    );
+    const worker = await User.findById(req.user.id).select("-password");
 
     if (!worker) {
       return res.status(404).json({
         success: false,
-        message: "Worker profile not found"
+        message: "Worker not found",
       });
     }
 
-    return res.status(200).json({
-      success: true,
-      worker
-    });
+    if (worker.role !== "worker") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Worker account required.",
+      });
+    }
 
+    res.status(200).json({
+      success: true,
+      worker,
+    });
   } catch (error) {
     console.error("Get worker profile error:", error);
 
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      message: "Server error"
+      message: "Failed to fetch worker profile",
     });
   }
 };
 
-
-// ======================================
+// =====================================================
 // UPDATE WORKER PROFILE
-// ======================================
-
+// PUT /api/workers/profile
+// Protected - Worker
+// =====================================================
 const updateWorkerProfile = async (req, res) => {
   try {
-    const worker = await Worker.findOne({
-      user: req.user._id
-    });
+    const worker = await User.findById(req.user.id);
 
     if (!worker) {
       return res.status(404).json({
         success: false,
-        message: "Worker profile not found"
+        message: "Worker not found",
+      });
+    }
+
+    if (worker.role !== "worker") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Worker account required.",
       });
     }
 
     const {
-      occupation,
+      name,
+      phone,
+      address,
+      profileImage,
       skills,
       experience,
-      certifications,
-      serviceRadius,
-      location
     } = req.body;
 
-    if (occupation !== undefined) {
-      worker.occupation = occupation;
-    }
+    if (name !== undefined) worker.name = name;
+    if (phone !== undefined) worker.phone = phone;
+    if (address !== undefined) worker.address = address;
+    if (profileImage !== undefined) worker.profileImage = profileImage;
+    if (skills !== undefined) worker.skills = skills;
+    if (experience !== undefined) worker.experience = experience;
 
-    if (skills !== undefined) {
-      worker.skills = skills;
-    }
+    const updatedWorker = await worker.save();
 
-    if (experience !== undefined) {
-      worker.experience = experience;
-    }
+    const workerResponse = updatedWorker.toObject();
+    delete workerResponse.password;
 
-    if (certifications !== undefined) {
-      worker.certifications = certifications;
-    }
-
-    if (serviceRadius !== undefined) {
-      worker.serviceRadius = serviceRadius;
-    }
-
-    if (location !== undefined) {
-      if (
-        !location.coordinates ||
-        location.coordinates.length !== 2
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid location coordinates"
-        });
-      }
-
-      worker.location = {
-        type: "Point",
-        coordinates: location.coordinates
-      };
-    }
-
-    await worker.save();
-
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       message: "Worker profile updated successfully",
-      worker
+      worker: workerResponse,
     });
-
   } catch (error) {
     console.error("Update worker profile error:", error);
 
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      message: "Server error while updating worker profile"
+      message: "Failed to update worker profile",
     });
   }
 };
 
-
-// ======================================
-// UPDATE AVAILABILITY
-// ======================================
-
-const updateAvailability = async (req, res) => {
+// =====================================================
+// UPDATE WORKER AVAILABILITY
+// PATCH /api/workers/availability
+// Protected - Worker
+// =====================================================
+const updateWorkerAvailability = async (req, res) => {
   try {
-    const { availability } = req.body;
-
-    if (typeof availability !== "boolean") {
-      return res.status(400).json({
-        success: false,
-        message: "Availability must be true or false"
-      });
-    }
-
-    const worker = await Worker.findOne({
-      user: req.user._id
-    });
+    const worker = await User.findById(req.user.id);
 
     if (!worker) {
       return res.status(404).json({
         success: false,
-        message: "Worker profile not found"
+        message: "Worker not found",
+      });
+    }
+
+    if (worker.role !== "worker") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Worker account required.",
+      });
+    }
+
+    const { availability } = req.body;
+
+    if (availability === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "Availability is required",
       });
     }
 
@@ -226,26 +132,52 @@ const updateAvailability = async (req, res) => {
 
     await worker.save();
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      message: "Availability updated successfully",
-      availability: worker.availability
+      message: "Worker availability updated successfully",
+      availability: worker.availability,
     });
-
   } catch (error) {
-    console.error("Availability update error:", error);
+    console.error("Update worker availability error:", error);
 
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      message: "Server error"
+      message: "Failed to update worker availability",
     });
   }
 };
 
+// =====================================================
+// GET AVAILABLE WORKERS
+// GET /api/workers/available
+// Protected - Customer/User
+// =====================================================
+const getAvailableWorkers = async (req, res) => {
+  try {
+    const workers = await User.find({
+      role: "worker",
+      availability: true,
+      isVerified: true,
+    }).select("-password");
+
+    res.status(200).json({
+      success: true,
+      count: workers.length,
+      workers,
+    });
+  } catch (error) {
+    console.error("Get available workers error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch available workers",
+    });
+  }
+};
 
 module.exports = {
-  createWorkerProfile,
-  getMyWorkerProfile,
+  getWorkerProfile,
   updateWorkerProfile,
-  updateAvailability
+  updateWorkerAvailability,
+  getAvailableWorkers,
 };

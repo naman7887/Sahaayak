@@ -1,44 +1,20 @@
 const express = require("express");
 
-const router = express.Router();
-
 const {
-    register,
-    login,
-    getMe
+  register,
+  login,
+  getMe,
 } = require("../controllers/auth.controller");
 
 const protect = require("../middleware/auth.middleware");
-const authorizeRoles = require("../middleware/role.middleware");
 
-// ==============================
-// AUTH ROUTES
-// ==============================
+const router = express.Router();
 
-// Register
+// Public authentication APIs
 router.post("/register", register);
-
-// Login
 router.post("/login", login);
 
-// Get current logged-in user
+// Authenticated user API
 router.get("/me", protect, getMe);
-
-// ==============================
-// TEMPORARY ROLE TEST ROUTE
-// ==============================
-
-// Worker-only test route
-router.get(
-    "/worker-test",
-    protect,
-    authorizeRoles("worker"),
-    (req, res) => {
-        res.status(200).json({
-            success: true,
-            message: "Worker-only route accessed successfully"
-        });
-    }
-);
 
 module.exports = router;

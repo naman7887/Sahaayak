@@ -12,6 +12,7 @@ const {
 } = require("../controllers/booking.controller");
 
 const protect = require("../middleware/auth.middleware");
+const authorizeRoles = require("../middleware/role.middleware");
 
 const router = express.Router();
 
@@ -19,16 +20,44 @@ const router = express.Router();
 router.use(protect);
 
 // Customer APIs
-router.post("/", createBooking);
-router.get("/my", getMyBookings);
-router.patch("/:id/cancel", cancelBooking);
+router.post(
+  "/",
+  authorizeRoles("customer"),
+  createBooking
+);
+
+router.get(
+  "/my",
+  authorizeRoles("customer"),
+  getMyBookings
+);
+
+router.patch(
+  "/:id/cancel",
+  authorizeRoles("customer"),
+  cancelBooking
+);
 
 // Worker APIs
-router.get("/worker", getWorkerBookings);
-router.patch("/:id/accept", acceptBooking);
-router.patch("/:id/reject", rejectBooking);
+router.get(
+  "/worker",
+  authorizeRoles("worker"),
+  getWorkerBookings
+);
 
-// Common APIs
+router.patch(
+  "/:id/accept",
+  authorizeRoles("worker"),
+  acceptBooking
+);
+
+router.patch(
+  "/:id/reject",
+  authorizeRoles("worker"),
+  rejectBooking
+);
+
+// Common authenticated API
 router.get("/:id", getBookingById);
 router.patch("/:id/status", updateBookingStatus);
 
