@@ -614,4 +614,3 @@ GET /health
 Access: Public
 
 This endpoint checks whether the backend is running.
-
