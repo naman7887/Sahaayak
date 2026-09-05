@@ -790,9 +790,64 @@ Authorization: Bearer <JWT_TOKEN>
 This deactivates the insurance plan instead of permanently deleting it.
 
 
+# User Profile APIs
+
+## 45. Get My Profile
+
+GET /users/profile
+
+Access: Authenticated User
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+### Response
+
+{
+  "success": true,
+  "user": {
+    "id": "<USER_ID>",
+    "name": "User Name",
+    "email": "user@example.com",
+    "phone": "9876543210",
+    "role": "customer",
+    "language": "en",
+    "isVerified": false
+  }
+}
+
+
+## 46. Update My Profile
+
+PATCH /users/profile
+
+Access: Authenticated User
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+### Body
+
+{
+  "name": "Updated Name",
+  "phone": "9876543210",
+  "language": "hi"
+}
+
+### Updatable Fields
+
+name
+phone
+language
+
+Users cannot change their role, verification status, email or password through this endpoint.
+
+
 # Health Check
 
-## 45. Check Backend Status
+## 47. Check Backend Status
 
 GET /health
 
