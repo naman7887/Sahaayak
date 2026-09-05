@@ -10,6 +10,7 @@ const paymentRoutes = require("./routes/payment.routes");
 const welfareRoutes = require("./routes/welfare.routes");
 const schemeRoutes = require("./routes/scheme.routes");
 const adminRoutes = require("./routes/admin.routes");
+const reviewRoutes = require("./routes/review.routes");
 
 const app = express();
 
@@ -25,6 +26,8 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/welfare", welfareRoutes);
 app.use("/api/schemes", schemeRoutes);
+app.use("/api/reviews", reviewRoutes);
+
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({

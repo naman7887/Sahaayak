@@ -660,9 +660,51 @@ rejected
 When a worker is rejected or moved back to pending, their availability is automatically set to false.
 
 
+# Review & Rating APIs
+
+## 38. Create Review
+
+POST /reviews
+
+Access: Authenticated Customer
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+### Body
+
+{
+  "booking": "<BOOKING_ID>",
+  "rating": 5,
+  "comment": "Excellent service and very professional."
+}
+
+### Rules
+
+- Only the customer who owns the booking can create the review.
+- The booking must have status `completed`.
+- The booking must have an assigned worker.
+- Only one review can be created per booking.
+- Rating must be an integer from 1 to 5.
+
+
+## 39. Get Worker Reviews
+
+GET /reviews/worker/:workerId
+
+Access: Public
+
+### Example
+
+GET /reviews/worker/<WORKER_ID>
+
+Returns the reviews and ratings submitted for the specified worker.
+
+
 # Health Check
 
-## 38. Check Backend Status
+## 40. Check Backend Status
 
 GET /health
 
