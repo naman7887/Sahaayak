@@ -16,12 +16,12 @@ Access: Public
 ### Body
 
 {
-  "name": "Ramesh Kumar",
-  "email": "ramesh@gmail.com",
+  "name": "Naman",
+  "email": "naman@example.com",
   "phone": "9876543210",
   "password": "password123",
   "role": "worker",
-  "language": "hi"
+  "language": "Hindi"
 }
 
 
@@ -34,7 +34,7 @@ Access: Public
 ### Body
 
 {
-  "email": "ramesh@gmail.com",
+  "email": "naman@example.com",
   "password": "password123"
 }
 
@@ -50,6 +50,7 @@ Access: Authenticated
 Authorization: Bearer <JWT_TOKEN>
 
 
+
 # Worker APIs
 
 All worker APIs require:
@@ -63,37 +64,31 @@ Role required: worker
 
 POST /workers/profile
 
+Access: Authenticated Worker
+
 ### Body
 
 {
   "occupation": "Electrician",
-  "skills": [
-    "Fan Installation",
-    "Wiring",
-    "Switch Repair",
-    "Inverter Installation"
-  ],
-  "experience": 7,
-  "certifications": [
-    {
-      "name": "Electrical Technician Certificate",
-      "issuingOrganization": "Skill Development Institute",
-      "certificateNumber": "CERT12345"
-    }
-  ],
+  "skills": ["Wiring", "Repair"],
+  "experience": 3,
+  "certifications": [],
+  "availability": true,
   "serviceRadius": 10,
   "location": {
-    "coordinates": [77.43, 28.67]
+    "type": "Point",
+    "coordinates": [77.5946, 12.9716]
   }
 }
-
-Note:
-Coordinates must be [longitude, latitude].
 
 
 ## 5. Get My Worker Profile
 
 GET /workers/profile
+
+Access: Authenticated Worker
+
+### Header
 
 Authorization: Bearer <JWT_TOKEN>
 
@@ -102,12 +97,33 @@ Authorization: Bearer <JWT_TOKEN>
 
 PUT /workers/profile
 
+Access: Authenticated Worker
+
+### Header
+
 Authorization: Bearer <JWT_TOKEN>
+
+### Body
+
+{
+  "occupation": "Electrician",
+  "skills": ["Wiring", "Repair", "Installation"],
+  "experience": 4,
+  "serviceRadius": 15,
+  "location": {
+    "type": "Point",
+    "coordinates": [77.5946, 12.9716]
+  }
+}
 
 
 ## 7. Update Worker Availability
 
 PATCH /workers/availability
+
+Access: Authenticated Worker
+
+### Header
 
 Authorization: Bearer <JWT_TOKEN>
 
@@ -117,11 +133,16 @@ Authorization: Bearer <JWT_TOKEN>
   "availability": true
 }
 
-## 8. Service APIs
+
+
+# Service APIs
+
+## 8. Get All Services
 
 GET /services
 
 Access: Public
+
 
 ## 9. Get Service By ID
 
@@ -129,24 +150,27 @@ GET /services/:id
 
 Access: Public
 
+
 ## 10. Create Service
 
 POST /services
 
 Access: Authenticated
 
-Header
+### Header
 
 Authorization: Bearer <JWT_TOKEN>
 
-## Body
+### Body
+
 {
-  "name": "Fan Repair",
+  "name": "Electrical Repair",
   "category": "Electrical",
-  "description": "Ceiling fan repair and installation",
-  "basePrice": 300,
+  "description": "Home electrical repair service",
+  "basePrice": 500,
   "estimatedDuration": 60
 }
+
 
 ## 11. Update Service
 
@@ -154,23 +178,163 @@ PUT /services/:id
 
 Access: Authenticated
 
-Header
+### Header
 
 Authorization: Bearer <JWT_TOKEN>
 
-12. Delete / Deactivate Service
+### Body
+
+{
+  "name": "Electrical Repair",
+  "category": "Electrical",
+  "description": "Home electrical repair service",
+  "basePrice": 600,
+  "estimatedDuration": 90
+}
+
+
+## 12. Delete / Deactivate Service
 
 DELETE /services/:id
 
 Access: Authenticated
 
-Header
+### Header
 
 Authorization: Bearer <JWT_TOKEN>
+
+
+
+# Booking APIs
+
+All booking APIs require:
+
+Authorization: Bearer <JWT_TOKEN>
+
+
+## 13. Create Booking
+
+POST /bookings
+
+Access: Authenticated
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+### Body
+
+{
+  "service": "<SERVICE_ID>",
+  "scheduledDate": "2026-09-10T10:00:00.000Z",
+  "address": "123 Main Street, Delhi",
+  "location": {
+    "type": "Point",
+    "coordinates": [77.1025, 28.7041]
+  },
+  "description": "Need electrical repair at home",
+  "price": 500
+}
+
+
+## 14. Get My Bookings
+
+GET /bookings/my
+
+Access: Authenticated
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+
+## 15. Get Worker Bookings
+
+GET /bookings/worker
+
+Access: Authenticated Worker
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+
+## 16. Get Booking By ID
+
+GET /bookings/:id
+
+Access: Authenticated
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+
+## 17. Accept Booking
+
+PATCH /bookings/:id/accept
+
+Access: Authenticated Worker
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+
+## 18. Reject Booking
+
+PATCH /bookings/:id/reject
+
+Access: Authenticated Worker
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+
+## 19. Update Booking Status
+
+PATCH /bookings/:id/status
+
+Access: Authenticated
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+### Body
+
+{
+  "status": "in-progress"
+}
+
+
+Possible status values:
+
+accepted
+in-progress
+completed
+cancelled
+
+
+## 20. Cancel Booking
+
+PATCH /bookings/:id/cancel
+
+Access: Authenticated Customer
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+
+
 # Health Check
 
-## 13. Check Backend Status
+## 21. Check Backend Status
 
 GET /health
+
+Access: Public
 
 This endpoint checks whether the backend is running.
