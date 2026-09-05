@@ -577,11 +577,16 @@ Authorization: Bearer <JWT_TOKEN>
 
 # Admin APIs
 
+All Admin APIs require:
+
+Authorization: Bearer <JWT_TOKEN>
+
+Access: Authenticated Admin
+
+
 ## 35. Get Admin Dashboard Statistics
 
 GET /admin/dashboard
-
-Access: Admin Only
 
 ### Header
 
@@ -605,9 +610,59 @@ Authorization: Bearer <JWT_TOKEN>
 }
 
 
+## 36. Get Workers For Admin
+
+GET /admin/workers
+
+Access: Authenticated Admin
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+### Query Parameter
+
+status
+
+Possible values:
+
+pending
+verified
+rejected
+
+Example:
+
+GET /admin/workers?status=pending
+
+
+## 37. Update Worker Verification Status
+
+PATCH /admin/workers/:id/verification
+
+Access: Authenticated Admin
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+### Body
+
+{
+  "verificationStatus": "verified"
+}
+
+Possible verification statuses:
+
+pending
+verified
+rejected
+
+When a worker is rejected or moved back to pending, their availability is automatically set to false.
+
+
 # Health Check
 
-## 36. Check Backend Status
+## 38. Check Backend Status
 
 GET /health
 

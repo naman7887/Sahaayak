@@ -2,6 +2,8 @@ const express = require("express");
 
 const {
   getDashboardStats,
+  getWorkers,
+  updateWorkerVerification,
 } = require("../controllers/admin.controller");
 
 const protect = require("../middleware/auth.middleware");
@@ -13,7 +15,11 @@ const router = express.Router();
 router.use(protect);
 router.use(authorizeRoles("admin"));
 
-// Admin dashboard statistics
+// Admin dashboard
 router.get("/dashboard", getDashboardStats);
+
+// Worker management
+router.get("/workers", getWorkers);
+router.patch("/workers/:id/verification", updateWorkerVerification);
 
 module.exports = router;
