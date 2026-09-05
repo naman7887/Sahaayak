@@ -702,9 +702,97 @@ GET /reviews/worker/<WORKER_ID>
 Returns the reviews and ratings submitted for the specified worker.
 
 
+# Insurance APIs
+
+## 40. Get All Insurance Plans
+
+GET /insurance
+
+Access: Public
+
+Returns all active insurance plans available on the platform.
+
+
+## 41. Get Insurance Plan By ID
+
+GET /insurance/:id
+
+Access: Public
+
+Returns details of a specific active insurance plan.
+
+
+## 42. Create Insurance Plan
+
+POST /insurance
+
+Access: Authenticated Admin
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+### Body
+
+{
+  "provider": "LIC",
+  "planName": "Worker Protection Plan",
+  "description": "Insurance coverage designed for eligible workers",
+  "coverageAmount": 500000,
+  "premiumAmount": 1200,
+  "premiumFrequency": "yearly",
+  "eligibility": "Registered workers meeting the eligibility criteria",
+  "benefits": [
+    "Accidental coverage",
+    "Medical assistance"
+  ],
+  "documentsRequired": [
+    "Aadhaar Card",
+    "Income Certificate"
+  ],
+  "applicationUrl": "https://example.gov.in"
+}
+
+
+## 43. Update Insurance Plan
+
+PUT /insurance/:id
+
+Access: Authenticated Admin
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+### Body
+
+{
+  "planName": "Updated Worker Protection Plan",
+  "premiumAmount": 1300,
+  "benefits": [
+    "Accidental coverage",
+    "Medical assistance",
+    "Emergency support"
+  ]
+}
+
+
+## 44. Delete / Deactivate Insurance Plan
+
+DELETE /insurance/:id
+
+Access: Authenticated Admin
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+This deactivates the insurance plan instead of permanently deleting it.
+
+
 # Health Check
 
-## 40. Check Backend Status
+## 45. Check Backend Status
 
 GET /health
 
