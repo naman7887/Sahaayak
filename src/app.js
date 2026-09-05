@@ -8,6 +8,8 @@ const serviceRoutes = require("./routes/service.routes");
 const bookingRoutes = require("./routes/booking.routes");
 const paymentRoutes = require("./routes/payment.routes");
 const welfareRoutes = require("./routes/welfare.routes");
+const schemeRoutes = require("./routes/scheme.routes");
+const adminRoutes = require("./routes/admin.routes");
 
 const app = express();
 
@@ -19,8 +21,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/workers", workerRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/welfare", welfareRoutes);
+app.use("/api/schemes", schemeRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({

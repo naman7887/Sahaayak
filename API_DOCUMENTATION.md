@@ -492,13 +492,126 @@ Access: Authenticated
 Authorization: Bearer <JWT_TOKEN>
 
 
+# Scheme APIs
+
+## 30. Get All Schemes
+
+GET /schemes
+
+Access: Public
+
+### Query Parameter
+
+category
+
+Example:
+
+GET /schemes?category=health
+
+
+## 31. Get Scheme By ID
+
+GET /schemes/:id
+
+Access: Public
+
+
+## 32. Create Scheme
+
+POST /schemes
+
+Access: Authenticated
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+### Body
+
+{
+  "title": "Health Insurance Scheme",
+  "description": "Healthcare support scheme for eligible workers",
+  "provider": "Government",
+  "category": "Health",
+  "benefits": "Financial assistance for healthcare expenses",
+  "eligibility": "Eligible registered workers",
+  "requiredDocuments": [
+    "Aadhaar Card",
+    "Income Certificate"
+  ],
+  "applicationProcess": "Apply through the official government portal",
+  "applicationUrl": "https://example.gov.in"
+}
+
+
+## 33. Update Scheme
+
+PUT /schemes/:id
+
+Access: Authenticated
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+### Body
+
+{
+  "title": "Updated Health Insurance Scheme",
+  "description": "Updated healthcare support scheme",
+  "benefits": "Updated benefits",
+  "eligibility": "Updated eligibility"
+}
+
+
+## 34. Delete / Deactivate Scheme
+
+DELETE /schemes/:id
+
+Access: Authenticated
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+
+# Admin APIs
+
+## 35. Get Admin Dashboard Statistics
+
+GET /admin/dashboard
+
+Access: Admin Only
+
+### Header
+
+Authorization: Bearer <JWT_TOKEN>
+
+### Response
+
+{
+  "success": true,
+  "statistics": {
+    "totalUsers": 0,
+    "totalWorkers": 0,
+    "totalServices": 0,
+    "totalBookings": 0,
+    "totalPayments": 0,
+    "totalWelfareSchemes": 0,
+    "totalSchemes": 0,
+    "pendingWorkers": 0,
+    "pendingBookings": 0
+  }
+}
+
 
 # Health Check
 
-## 30. Check Backend Status
+## 36. Check Backend Status
 
 GET /health
 
 Access: Public
 
 This endpoint checks whether the backend is running.
+
