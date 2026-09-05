@@ -1,25 +1,70 @@
 const express = require("express");
+const router = express.Router();
+
+const protect = require("../middleware/auth.middleware");
+const authorizeRoles = require("../middleware/role.middleware");
 
 const {
   getSchemes,
-  getSchemeById,
+  getSchemeById: getSchemeByIdService,
   createScheme,
   updateScheme,
   deleteScheme,
 } = require("../controllers/scheme.controller");
 
-const protect = require("../middleware/auth.middleware");
-const authorizeRoles = require("../middleware/role.middleware");
+const {
+  getMyRecommendedSchemes,
+} = require("../controllers/schemeEligibility.controller");
 
-const router = express.Router();
+// ======================================
+// PUBLIC SCHEME ROUTES
+// ======================================
 
-// Public routes
+// Get all active schemes
 router.get("/", getSchemes);
-router.get("/:id", getSchemeById);
 
-// Admin-only management routes
-router.post("/", protect, authorizeRoles("admin"), createScheme);
-router.put("/:id", protect, authorizeRoles("admin"), updateScheme);
-router.delete("/:id", protect, authorizeRoles("admin"), deleteScheme);
+// ======================================
+// WORKER SCHEME RECOMMENDATIONS
+// ======================================
+
+// Get schemes recommended for the logged-in worker
+// IMPORTANT: This must come before /:id
+router.get(
+  "/recommended",
+  protect,
+  authorizeRoles("worker"),
+  getMyRecommendedSchemes
+);
+
+// Get scheme by ID
+router.get("/:id", getSchemeByIdService);
+
+// ======================================
+// ADMIN SCHEME ROUTES
+// ======================================
+
+// Create scheme
+router.post(
+  "/",
+  protect,
+  authorizeRoles("admin"),
+  createScheme
+);
+
+// Update scheme
+router.put(
+  "/:id",
+  protect,
+  authorizeRoles("admin"),
+  updateScheme
+);
+
+// Delete scheme
+router.delete(
+  "/:id",
+  protect,
+  authorizeRoles("admin"),
+  deleteScheme
+);
 
 module.exports = router;

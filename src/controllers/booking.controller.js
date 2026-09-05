@@ -2,6 +2,9 @@ const Booking = require("../models/Booking");
 const Service = require("../models/Service");
 const { findMatchingWorkers } = require("../services/matching.service");
 const { createNotification } = require("../services/notification.service");
+const {
+  updateWorkerJobCount,
+} = require("../services/workerSalary.service");
 
 // ======================================
 // CREATE BOOKING
@@ -465,11 +468,59 @@ const updateBookingStatus = async (req, res) => {
       }
     }
 
+    const previousStatus = booking.status;
+
     booking.status = status;
 
     await booking.save();
 
-    // Notify the other participant
+    // ======================================
+    // WORKER SALARY INTEGRATION
+    // ======================================
+
+    // Only count the job when it changes to completed.
+    // The existing status transition rules prevent
+    // the same booking from being completed twice.
+    if (
+      status === "completed" &&
+      previousStatus !== "completed" &&
+      booking.worker
+    ) {
+      try {
+        const salary = await updateWorkerJobCount(booking.worker);
+
+        console.log(
+          `Worker ${booking.worker} completed a job. ` +
+          `Monthly jobs: ${salary.completedJobs}, ` +
+          `Extra jobs: ${salary.extraJobs}, ` +
+          `Final salary: ₹${salary.finalSalary}`
+        );
+
+        // Notify worker about updated earnings
+        await createNotification({
+          recipient: booking.worker,
+          type: "payment",
+          title: "Job Completed - Earnings Updated",
+          message:
+            salary.extraJobs > 0
+              ? `Your monthly earnings have been updated. You earned overtime for this job. Current estimated salary: ₹${salary.finalSalary}.`
+              : `Your monthly job count is ${salary.completedJobs}/${salary.monthlyJobLimit}. Current estimated salary: ₹${salary.finalSalary}.`,
+          booking: booking._id,
+        });
+      } catch (salaryError) {
+        // Do not fail the booking completion if salary processing
+        // encounters an issue.
+        console.error(
+          "Worker salary update error:",
+          salaryError.message
+        );
+      }
+    }
+
+    // ======================================
+    // NOTIFICATIONS
+    // ======================================
+
     if (status === "completed") {
       await createNotification({
         recipient: booking.customer,

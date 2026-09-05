@@ -14,6 +14,9 @@ const reviewRoutes = require("./routes/review.routes");
 const insuranceRoutes = require("./routes/insurance.routes");
 const userRoutes = require("./routes/user.routes");
 const notificationRoutes = require("./routes/notification.routes");
+const workerSalaryRoutes = require("./routes/workerSalary.routes");
+const trainingRoutes = require("./routes/training.routes");
+const workerTrainingRoutes = require("./routes/workerTraining.routes");
 
 const app = express();
 
@@ -33,6 +36,9 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/insurance", insuranceRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/worker-salaries", workerSalaryRoutes);
+app.use("/api/training", trainingRoutes);
+app.use("/api/worker-trainings", workerTrainingRoutes);
 
 
 app.get("/api/health", (req, res) => {

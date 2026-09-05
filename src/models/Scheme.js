@@ -57,12 +57,65 @@ const schemeSchema = new mongoose.Schema(
       default: "",
     },
 
+    // ======================================
+    // SMART ELIGIBILITY FIELDS
+    // ======================================
+
+    targetOccupations: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+
+    minimumAge: {
+      type: Number,
+      default: null,
+    },
+
+    maximumAge: {
+      type: Number,
+      default: null,
+    },
+
+    maximumIncome: {
+      type: Number,
+      default: null,
+    },
+
+    eligibleStates: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+
+    requiredSkills: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+
+    eligibleWorkerTypes: [
+      {
+        type: String,
+        enum: ["worker", "customer", "all"],
+      },
+    ],
+
+    // ======================================
+    // STATUS
+    // ======================================
+
     isActive: {
       type: Boolean,
       default: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 module.exports = mongoose.model("Scheme", schemeSchema);
