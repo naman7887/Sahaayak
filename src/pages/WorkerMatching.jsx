@@ -2,27 +2,30 @@ import { useEffect, useState } from "react";
 
 function WorkerMatching() {
   const [service, setService] = useState(null);
-  const [selectedWorker, setSelectedWorker] = useState(null);
-  const [address, setAddress] = useState("");
+  const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
-  const [bookingSuccess, setBookingSuccess] = useState(null);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [booking, setBooking] = useState(null);
 
-  // Load the real service from MongoDB
+  const [address, setAddress] = useState("");
+  const [description, setDescription] = useState("");
+
+  const params = new URLSearchParams(window.location.search);
+
+  const serviceId = params.get("service");
+  const selectedDate = params.get("date");
+  const selectedTime = params.get("time");
+
   useEffect(() => {
+    if (!serviceId) {
+      setError("Service information is missing.");
+      setLoading(false);
+      return;
+    }
+
     const fetchService = async () => {
       try {
-        const params = new URLSearchParams(window.location.search);
-
-        const serviceId = params.get("service");
-        const date = params.get("date");
-        const time = params.get("time");
-
-        if (!serviceId) {
-          setError("Service information is missing.");
-          return;
-        }
-
         const response = await fetch(
           `http://localhost:5000/api/services/${serviceId}`
         );
@@ -34,64 +37,20 @@ function WorkerMatching() {
           return;
         }
 
-        setService({
-          ...data.service,
-          date,
-          time,
-        });
+        setService(data.service);
       } catch (error) {
-        console.error("Service loading error:", error);
-        setError("Cannot connect to the backend.");
+        console.error(error);
+        setError("Unable to connect to the server.");
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchService();
-  }, []);
+  }, [serviceId]);
 
-  // Demo providers for UI fallback
-  const demoWorkers = [
-    {
-      id: 1,
-      name: "Ramesh Kumar",
-      skill: "Electrician",
-      rating: "4.8",
-      distance: "2.1 km",
-      availability: "Available",
-    },
-    {
-      id: 2,
-      name: "Amit Sharma",
-      skill: "Electrician",
-      rating: "4.7",
-      distance: "1.8 km",
-      availability: "Available",
-    },
-    {
-      id: 3,
-      name: "Vikram Singh",
-      skill: "Electrician",
-      rating: "4.6",
-      distance: "3.2 km",
-      availability: "Available",
-    },
-  ];
-
-  // Create real booking
-  const handleConfirm = async () => {
-    if (!selectedWorker) {
-      alert("Please select a provider first.");
-      return;
-    }
-
-    if (!address.trim()) {
-      alert("Please enter your service address.");
-      return;
-    }
-
-    if (!service?.date || !service?.time) {
-      alert("Please select a date and time.");
-      return;
-    }
+  const handleBooking = async (e) => {
+    e.preventDefault();
 
     const token = localStorage.getItem("token");
 
@@ -101,31 +60,32 @@ function WorkerMatching() {
       return;
     }
 
-    setBookingLoading(true);
-    setError("");
+    if (!address.trim()) {
+      alert("Please enter your service address.");
+      return;
+    }
+
+    if (!service) {
+      return;
+    }
 
     try {
-      const timeMap = {
-        "09:00 AM": "09:00",
-        "10:00 AM": "10:00",
-        "12:00 PM": "12:00",
-        "02:00 PM": "14:00",
-        "04:00 PM": "16:00",
-        "06:00 PM": "18:00",
-      };
+      setBookingLoading(true);
+      setError("");
 
-      const selectedTime = timeMap[service.time] || "10:00";
-
-      const scheduledDate = new Date(
-        `${service.date}T${selectedTime}:00`
-      );
-
-      // Temporary demo location for SIH prototype.
-      // Format required by backend: [longitude, latitude]
-      const demoLocation = {
+      /*
+        Demo location for now.
+        This can later be replaced with the user's
+        actual GPS/location from the frontend.
+      */
+      const location = {
         type: "Point",
         coordinates: [77.1025, 28.7041],
       };
+
+      const scheduledDate = new Date(
+        `${selectedDate} ${selectedTime}`
+      );
 
       const response = await fetch(
         "http://localhost:5000/api/bookings",
@@ -139,8 +99,10 @@ function WorkerMatching() {
             service: service._id,
             scheduledDate: scheduledDate.toISOString(),
             address: address.trim(),
-            location: demoLocation,
-            description: `Request for ${service.name}`,
+            location,
+            description:
+              description.trim() ||
+              `Request for ${service.name}`,
           }),
         }
       );
@@ -148,450 +110,347 @@ function WorkerMatching() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message || "Failed to create booking."
+        setError(
+          data.message || "Unable to create booking."
         );
+        return;
       }
 
-      setBookingSuccess(data.booking);
+      setBooking(data.booking);
+      setSuccess(true);
     } catch (error) {
-      console.error("Booking error:", error);
-      setError(error.message || "Failed to create booking.");
+      console.error(error);
+      setError("Unable to connect to the server.");
     } finally {
       setBookingLoading(false);
     }
   };
 
-  // Loading state
-  if (!service && !error) {
+  const formatDate = (value) => {
+    if (!value) return "Not selected";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+
+    return date.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  if (loading) {
     return (
-      <main className="worker-matching-page">
-        <div className="matching-header">
-          <h1>Finding suitable providers...</h1>
-          <p>Please wait while we prepare your service request.</p>
+      <div className="worker-matching-page">
+        <div className="dashboard-loading">
+          Finding service information...
         </div>
-      </main>
+      </div>
     );
   }
 
-  // Service loading error
-  if (!service && error) {
+  if (error && !service) {
     return (
-      <main className="worker-matching-page">
-        <div className="matching-header">
-          <h1>Unable to load service</h1>
+      <div className="worker-matching-page">
+        <div className="booking-success-card">
+          <div className="success-icon">!</div>
+
+          <h2>Something went wrong</h2>
+
           <p>{error}</p>
 
           <button
-            onClick={() =>
-              (window.location.href = "/find-services")
-            }
+            className="secondary-action-btn"
+            onClick={() => {
+              window.location.href = "/find-services";
+            }}
           >
             Back to Services
           </button>
         </div>
-      </main>
+      </div>
     );
   }
 
-  // Successful booking
-  if (bookingSuccess) {
-    const matchedWorker = bookingSuccess.worker;
+  if (success && booking) {
+    const workerName =
+      booking.worker?.name ||
+      booking.worker?.user?.name ||
+      null;
 
     return (
-      <main className="worker-matching-page">
-        {/* HEADER */}
-
-        <section className="matching-header">
-          <p className="dashboard-label">
-            BOOKING CONFIRMED
+      <div className="worker-matching-page">
+        <div className="matching-header">
+          <p className="matching-eyebrow">
+            Booking Confirmed
           </p>
 
-          <h1>
-            Your service request has been created
-          </h1>
+          <h1>Your service request is on its way!</h1>
 
           <p>
-            Sahaayak has successfully processed your
-            request and selected a suitable provider.
+            Sahaayak has received your request and our
+            smart matching system has processed it.
           </p>
-        </section>
-
-        {/* BOOKING SUMMARY */}
-
-        <section className="request-summary">
-          <div>
-            <span>Service</span>
-
-            <strong>
-              {bookingSuccess.service?.name ||
-                service.name}
-            </strong>
-          </div>
-
-          <div>
-            <span>Date</span>
-
-            <strong>{service.date}</strong>
-          </div>
-
-          <div>
-            <span>Time</span>
-
-            <strong>{service.time}</strong>
-          </div>
-        </section>
-
-        {/* SMART MATCH RESULT */}
-
-        <section className="matching-section">
-          <div className="matching-title">
-            <div>
-              <p>⭐ SMART MATCH</p>
-
-              <h2>
-                Your matched provider
-              </h2>
-            </div>
-
-            <span>
-              Selected by Sahaayak
-            </span>
-          </div>
-
-          <div className="worker-matching-grid">
-            <div className="matching-card recommended-card">
-              <div className="recommended-badge">
-                ⭐ Smart Match
-              </div>
-
-              <div className="matching-card-top">
-                <div className="matching-avatar">
-                  👷
-                </div>
-
-                <div>
-                  <h3>
-                    {matchedWorker?.name ||
-                      "Provider assigned"}
-                  </h3>
-
-                  <p>
-                    {bookingSuccess.service?.category ||
-                      service.category}
-                  </p>
-                </div>
-              </div>
-
-              {matchedWorker ? (
-                <div className="worker-rating">
-                  <span>
-                    ✓ Verified provider
-                  </span>
-
-                  <span>
-                    • Booking assigned
-                  </span>
-                </div>
-              ) : (
-                <div className="worker-rating">
-                  <span>
-                    Provider matching is in progress
-                  </span>
-                </div>
-              )}
-
-              <div className="matching-reasons">
-                <p>SMART MATCH RESULT</p>
-
-                <div>
-                  ✓ Provider selected by backend
-                </div>
-
-                <div>
-                  ✓ Availability and service requirements checked
-                </div>
-
-                <div>
-                  ✓ Local provider matching completed
-                </div>
-              </div>
-
-              <div className="matching-bottom">
-                <div>
-                  <span>Booking status</span>
-
-                  <strong>
-                    {bookingSuccess.status}
-                  </strong>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* CONFIRMATION */}
-
-        <div className="worker-confirmation">
-          <div>
-            <span>Booking ID</span>
-
-            <strong>
-              {bookingSuccess._id}
-            </strong>
-
-            <p>
-              Your booking has been saved successfully.
-            </p>
-          </div>
-
-          <button
-            onClick={() =>
-              (window.location.href = "/dashboard")
-            }
-          >
-            Go to Dashboard
-          </button>
         </div>
-      </main>
+
+        <div className="booking-success-card">
+          <div className="success-icon">✓</div>
+
+          <h2>Booking Created Successfully</h2>
+
+          <p>
+            Your request for{" "}
+            <strong>{service.name}</strong> has been
+            submitted.
+          </p>
+
+          <div className="smart-match-result">
+            <div className="smart-match-icon">
+              🤖
+            </div>
+
+            <div>
+              <strong>
+                {workerName
+                  ? `Provider matched: ${workerName}`
+                  : "Finding the best provider"}
+              </strong>
+
+              <p>
+                {workerName
+                  ? "A verified provider has been automatically assigned to your request."
+                  : "We are looking for an available verified provider in your area."}
+              </p>
+            </div>
+          </div>
+
+          <div className="booking-confirmation-details">
+            <div>
+              <span>Service</span>
+              <strong>{service.name}</strong>
+            </div>
+
+            <div>
+              <span>Date</span>
+              <strong>
+                {formatDate(booking.scheduledDate)}
+              </strong>
+            </div>
+
+            <div>
+              <span>Address</span>
+              <strong>{booking.address}</strong>
+            </div>
+
+            <div>
+              <span>Price</span>
+              <strong>
+                ₹{booking.price || service.basePrice}
+              </strong>
+            </div>
+
+            <div>
+              <span>Status</span>
+              <strong>
+                {booking.status === "pending"
+                  ? "Waiting for Provider"
+                  : booking.status}
+              </strong>
+            </div>
+
+            <div>
+              <span>Booking ID</span>
+              <strong>
+                {booking._id?.slice(-8).toUpperCase()}
+              </strong>
+            </div>
+          </div>
+
+          <div className="booking-success-actions">
+            <button
+              className="confirm-booking-btn"
+              onClick={() => {
+                window.location.href = "/dashboard";
+              }}
+            >
+              View My Bookings
+            </button>
+
+            <button
+              className="secondary-action-btn"
+              onClick={() => {
+                window.location.href = "/find-services";
+              }}
+            >
+              Book Another Service
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <main className="worker-matching-page">
-
-      {/* HEADER */}
-
-      <section className="matching-header">
-        <p className="dashboard-label">
-          SMART MATCHING
+    <div className="worker-matching-page">
+      <div className="matching-header">
+        <p className="matching-eyebrow">
+          Smart Provider Matching
         </p>
 
-        <h1>
-          We've found suitable providers for you
-        </h1>
+        <h1>Complete Your Service Request</h1>
 
         <p>
-          Sahaayak helps you find suitable local
-          providers based on availability, skills,
-          distance and service requirements.
+          Tell us where you need the service and
+          Sahaayak will automatically find the best
+          available provider.
         </p>
-      </section>
+      </div>
 
-      {/* REQUEST SUMMARY */}
-
-      <section className="request-summary">
-        <div>
-          <span>Service</span>
-
-          <strong>
-            {service.name}
-          </strong>
-        </div>
-
-        <div>
-          <span>Date</span>
-
-          <strong>
-            {service.date || "Not selected"}
-          </strong>
-        </div>
-
-        <div>
-          <span>Time</span>
-
-          <strong>
-            {service.time || "Not selected"}
-          </strong>
-        </div>
-      </section>
-
-      {/* AVAILABLE PROVIDERS */}
-
-      <section className="matching-section">
-        <div className="matching-title">
-          <div>
-            <p>AVAILABLE PROVIDERS</p>
-
-            <h2>
-              Choose a provider
-            </h2>
+      <div className="booking-layout">
+        <div className="booking-service-card">
+          <div className="booking-service-icon">
+            🔧
           </div>
 
-          <span>
-            {demoWorkers.length} providers
-          </span>
-        </div>
+          <p className="service-category">
+            {service.category}
+          </p>
 
-        <div className="worker-matching-grid">
+          <h2>{service.name}</h2>
 
-          {demoWorkers.map((worker) => (
-            <div
-              className={`matching-card ${
-                selectedWorker?.id === worker.id
-                  ? "recommended-card"
-                  : ""
-              }`}
-              key={worker.id}
-            >
+          <p>
+            {service.description}
+          </p>
 
-              {selectedWorker?.id === worker.id && (
-                <div className="recommended-badge">
-                  ✓ Selected
-                </div>
-              )}
+          <div className="booking-price-large">
+            ₹{service.basePrice}
+            <span>Starting price</span>
+          </div>
 
-              <div className="matching-card-top">
-                <div className="matching-avatar">
-                  👷
-                </div>
-
-                <div>
-                  <h3>
-                    {worker.name}
-                  </h3>
-
-                  <p>
-                    {worker.skill}
-                  </p>
-                </div>
-              </div>
-
-              <div className="worker-rating">
-                <span>
-                  ⭐ {worker.rating}
-                </span>
-
-                <span>
-                  • {worker.distance}
-                </span>
-
-                <span className="available-text">
-                  • {worker.availability}
-                </span>
-              </div>
-
-              <div className="matching-reasons">
-                <p>PROVIDER DETAILS</p>
-
-                <div>
-                  ✓ Available for your request
-                </div>
-
-                <div>
-                  ✓ Local service provider
-                </div>
-
-                <div>
-                  ✓ Verified {worker.skill}
-                </div>
-              </div>
-
-              <div className="matching-bottom">
-                <div>
-                  <span>Service price</span>
-
-                  <strong>
-                    ₹{service.basePrice}
-                  </strong>
-                </div>
-
-                <button
-                  onClick={() =>
-                    setSelectedWorker(worker)
-                  }
-                >
-                  {selectedWorker?.id === worker.id
-                    ? "Selected"
-                    : "Select"}
-                </button>
-              </div>
-            </div>
-          ))}
-
-        </div>
-      </section>
-
-      {/* ADDRESS */}
-
-      {selectedWorker && (
-        <section className="matching-section">
-
-          <div className="matching-title">
+          <div className="booking-summary-item">
+            <span>📅</span>
             <div>
-              <p>BOOKING DETAILS</p>
-
-              <h2>
-                Where should the service be provided?
-              </h2>
+              <small>Date</small>
+              <strong>
+                {formatDate(selectedDate)}
+              </strong>
             </div>
           </div>
 
-          <div className="booking-address-box">
-            <label>
-              Service Address
-            </label>
-
-            <textarea
-              value={address}
-              onChange={(e) =>
-                setAddress(e.target.value)
-              }
-              placeholder="Enter your complete service address"
-              rows="3"
-            />
-
-            <small>
-              Example: House No. 24, Main Road,
-              New Delhi
-            </small>
+          <div className="booking-summary-item">
+            <span>⏰</span>
+            <div>
+              <small>Time</small>
+              <strong>
+                {selectedTime || "Not selected"}
+              </strong>
+            </div>
           </div>
 
-        </section>
-      )}
-
-      {/* SELECTED PROVIDER */}
-
-      {selectedWorker && (
-        <div className="worker-confirmation">
-
-          <div>
-            <span>
-              Selected provider
-            </span>
-
-            <strong>
-              {selectedWorker.name}
-            </strong>
-
-            <p>
-              ⭐ {selectedWorker.rating}
-              {" • "}
-              {selectedWorker.distance} away
-            </p>
+          <div className="booking-summary-item">
+            <span>⏱️</span>
+            <div>
+              <small>Estimated duration</small>
+              <strong>
+                {service.estimatedDuration >= 60
+                  ? `${Math.floor(
+                      service.estimatedDuration / 60
+                    )} hour${
+                      service.estimatedDuration / 60 > 1
+                        ? "s"
+                        : ""
+                    }`
+                  : `${service.estimatedDuration} minutes`}
+              </strong>
+            </div>
           </div>
-
-          <button
-            onClick={handleConfirm}
-            disabled={bookingLoading}
-          >
-            {bookingLoading
-              ? "Creating Booking..."
-              : "Confirm Booking"}
-          </button>
-
         </div>
-      )}
 
-      {/* ERROR */}
+        <div className="booking-form-card">
+          <h2>Where do you need the service?</h2>
 
-      {error && service && (
-        <div className="booking-error">
-          ⚠️ {error}
+          <p className="booking-form-subtitle">
+            Enter your address so we can match you
+            with a nearby provider.
+          </p>
+
+          {error && (
+            <div className="admin-error">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleBooking}>
+            <div className="booking-field">
+              <label>
+                Service Address
+                <span className="required">*</span>
+              </label>
+
+              <textarea
+                value={address}
+                onChange={(e) =>
+                  setAddress(e.target.value)
+                }
+                placeholder="Enter your complete address..."
+                rows="4"
+                required
+              />
+            </div>
+
+            <div className="booking-field">
+              <label>
+                Additional Details{" "}
+                <span className="optional-label">
+                  Optional
+                </span>
+              </label>
+
+              <textarea
+                value={description}
+                onChange={(e) =>
+                  setDescription(e.target.value)
+                }
+                placeholder="Describe the problem or any special requirements..."
+                rows="4"
+              />
+            </div>
+
+            <div className="smart-match-info">
+              <div className="smart-match-icon">
+                🤖
+              </div>
+
+              <div>
+                <strong>
+                  Smart Matching Enabled
+                </strong>
+
+                <p>
+                  Sahaayak automatically considers
+                  provider availability, verification,
+                  service category and location to find
+                  the right provider.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="confirm-booking-btn"
+              disabled={bookingLoading}
+            >
+              {bookingLoading
+                ? "Finding Best Provider..."
+                : "Confirm & Find Provider →"}
+            </button>
+          </form>
         </div>
-      )}
-
-    </main>
+      </div>
+    </div>
   );
 }
 

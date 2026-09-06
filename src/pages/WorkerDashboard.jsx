@@ -2,391 +2,410 @@ import { useEffect, useState } from "react";
 
 function WorkerDashboard() {
   const [user, setUser] = useState(null);
+  const [worker, setWorker] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [error, setError] = useState("");
 
   const token = localStorage.getItem("token");
 
-  const loadWorkerDashboard = async () => {
-    if (!token) {
-      window.location.href = "/login";
-      return;
-    }
-
+  const fetchDashboard = async () => {
     try {
-      setLoading(true);
       setError("");
 
-      // Get worker/user information
-      const userResponse = await fetch(
-        "http://localhost:5000/api/auth/me",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const [userResponse, workerResponse, bookingResponse] =
+        await Promise.all([
+          fetch("http://localhost:5000/api/auth/me", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+
+          fetch("http://localhost:5000/api/workers/profile", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+
+          fetch("http://localhost:5000/api/bookings/worker", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+        ]);
 
       const userData = await userResponse.json();
-
-      if (!userResponse.ok) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
-
-      setUser(userData.user);
-
-      // Get worker bookings
-      const bookingResponse = await fetch(
-        "http://localhost:5000/api/bookings/worker",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
+      const workerData = await workerResponse.json();
       const bookingData = await bookingResponse.json();
 
-      if (!bookingResponse.ok) {
+      if (!userResponse.ok) {
+        throw new Error(userData.message || "Unable to load user.");
+      }
+
+      if (!workerResponse.ok) {
         throw new Error(
-          bookingData.message ||
-            "Unable to load worker bookings."
+          workerData.message || "Unable to load worker profile."
         );
       }
 
+      if (!bookingResponse.ok) {
+        throw new Error(
+          bookingData.message || "Unable to load bookings."
+        );
+      }
+
+      setUser(userData.user);
+      setWorker(workerData.worker);
       setBookings(bookingData.bookings || []);
     } catch (error) {
-      console.error("Worker dashboard error:", error);
-
-      setError(
-        error.message ||
-          "Cannot connect to the backend."
-      );
+      console.error(error);
+      setError(error.message || "Unable to load dashboard.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadWorkerDashboard();
+    fetchDashboard();
+
+    const interval = setInterval(fetchDashboard, 15000);
+
+    return () => clearInterval(interval);
   }, []);
 
-  const updateBooking = async (bookingId, action) => {
+  const toggleAvailability = async () => {
+    if (!worker) return;
+
     try {
-      setActionLoading(bookingId);
-      setError("");
+      setAvailabilityLoading(true);
 
-      let url = "";
-      let options = {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      };
+      const newAvailability = !worker.availability;
 
-      if (action === "accept") {
-        url = `http://localhost:5000/api/bookings/${bookingId}/accept`;
-      }
-
-      if (action === "reject") {
-        url = `http://localhost:5000/api/bookings/${bookingId}/reject`;
-      }
-
-      if (action === "in-progress") {
-        url = `http://localhost:5000/api/bookings/${bookingId}/status`;
-
-        options.headers["Content-Type"] =
-          "application/json";
-
-        options.body = JSON.stringify({
-          status: "in-progress",
-        });
-      }
-
-      if (action === "completed") {
-        url = `http://localhost:5000/api/bookings/${bookingId}/status`;
-
-        options.headers["Content-Type"] =
-          "application/json";
-
-        options.body = JSON.stringify({
-          status: "completed",
-        });
-      }
-
-      const response = await fetch(url, options);
+      const response = await fetch(
+        "http://localhost:5000/api/workers/availability",
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            availability: newAvailability,
+          }),
+        }
+      );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "Unable to update booking."
-        );
+        alert(data.message || "Unable to update availability.");
+        return;
       }
 
-      // Reload bookings after every action
-      await loadWorkerDashboard();
+      setWorker({
+        ...worker,
+        availability: newAvailability,
+      });
     } catch (error) {
-      console.error("Booking update error:", error);
-
-      setError(
-        error.message ||
-          "Unable to update booking."
-      );
+      console.error(error);
+      alert("Cannot connect to backend.");
     } finally {
-      setActionLoading(null);
+      setAvailabilityLoading(false);
     }
   };
 
-  const formatDate = (date) => {
-    if (!date) return "Date unavailable";
+  const updateBookingStatus = async (bookingId, action) => {
+    try {
+      setActionLoading(true);
 
-    return new Date(date).toLocaleDateString(
-      "en-IN",
-      {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
+      let endpoint = "";
+      let body = null;
+
+      if (action === "accept") {
+        endpoint = `/api/bookings/${bookingId}/accept`;
       }
-    );
-  };
 
-  const formatTime = (date) => {
-    if (!date) return "";
-
-    return new Date(date).toLocaleTimeString(
-      "en-IN",
-      {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
+      if (action === "reject") {
+        endpoint = `/api/bookings/${bookingId}/reject`;
       }
-    );
+
+      if (action === "in-progress") {
+        endpoint = `/api/bookings/${bookingId}/status`;
+        body = { status: "in-progress" };
+      }
+
+      if (action === "completed") {
+        endpoint = `/api/bookings/${bookingId}/status`;
+        body = { status: "completed" };
+      }
+
+      const response = await fetch(
+        `http://localhost:5000${endpoint}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          ...(body && {
+            body: JSON.stringify(body),
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || "Unable to update booking.");
+        return;
+      }
+
+      await fetchDashboard();
+    } catch (error) {
+      console.error(error);
+      alert("Cannot connect to backend.");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const getStatusClass = (status) => {
-    switch (status) {
-      case "accepted":
-        return "status-accepted";
+    if (status === "pending") return "booking-status-pending";
+    if (status === "accepted") return "booking-status-accepted";
+    if (status === "in-progress") return "booking-status-progress";
+    if (status === "completed") return "booking-status-completed";
+    if (status === "rejected") return "booking-status-rejected";
+    if (status === "cancelled") return "booking-status-cancelled";
 
-      case "in-progress":
-        return "status-progress";
-
-      case "completed":
-        return "status-completed";
-
-      case "cancelled":
-        return "status-cancelled";
-
-      case "rejected":
-        return "status-rejected";
-
-      default:
-        return "status-pending";
-    }
+    return "";
   };
 
-  const getStatusLabel = (status) => {
-    switch (status) {
-      case "in-progress":
-        return "In Progress";
+  const formatDate = (date) => {
+    if (!date) return "Date not specified";
 
-      case "accepted":
-        return "Accepted";
-
-      case "completed":
-        return "Completed";
-
-      case "cancelled":
-        return "Cancelled";
-
-      case "rejected":
-        return "Rejected";
-
-      default:
-        return "Pending";
-    }
+    return new Date(date).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
   };
 
   const pendingBookings = bookings.filter(
-    (booking) =>
-      booking.status === "pending"
+    (booking) => booking.status === "pending"
   );
 
   const activeBookings = bookings.filter(
     (booking) =>
-      ["accepted", "in-progress"].includes(
-        booking.status
-      )
+      booking.status === "accepted" ||
+      booking.status === "in-progress"
   );
 
   const completedBookings = bookings.filter(
-    (booking) =>
-      booking.status === "completed"
+    (booking) => booking.status === "completed"
   );
 
+  const earnings = completedBookings.reduce(
+    (total, booking) => total + Number(booking.price || 0),
+    0
+  );
+
+  const workerOccupation =
+    worker?.occupation || "Service Provider";
+
+  if (loading) {
+    return (
+      <div className="worker-profile-loading">
+        Loading worker dashboard...
+      </div>
+    );
+  }
+
   return (
-    <main className="worker-dashboard-page">
+    <div className="worker-dashboard-page">
 
       {/* HEADER */}
-
-      <section className="worker-dashboard-header">
+      <div className="worker-dashboard-header">
 
         <div>
-
-          <p className="dashboard-label">
-            PROVIDER DASHBOARD
+          <p className="worker-dashboard-eyebrow">
+            SAHAAYAK WORKER PANEL
           </p>
 
           <h1>
-            Welcome back
-            {user?.name
-              ? `, ${user.name}`
-              : ""}
+            Welcome, {user?.name || "Service Provider"} 👋
           </h1>
 
           <p>
-            Manage your service requests,
-            bookings and earnings from one place.
+            Manage your jobs, earnings and professional profile.
           </p>
+        </div>
+
+        <div className="worker-dashboard-header-actions">
+
+          <div className="worker-profile-mini">
+            <div className="worker-profile-mini-avatar">
+              {(user?.name || "W").charAt(0).toUpperCase()}
+            </div>
+
+            <div>
+              <strong>{user?.name || "Worker"}</strong>
+              <span>{workerOccupation}</span>
+            </div>
+          </div>
+
+          <a
+            href="/worker-profile"
+            className="worker-view-profile-btn"
+          >
+            View Profile →
+          </a>
+
+          <button
+            className="worker-refresh-btn"
+            onClick={fetchDashboard}
+          >
+            ↻
+          </button>
 
         </div>
 
-        <div className="worker-status-pill">
-          🟢 Available for work
+      </div>
+
+      {/* AVAILABILITY */}
+      <div className="worker-availability-card">
+
+        <div className="availability-left">
+
+          <div
+            className={`availability-icon ${
+              worker?.availability ? "online" : "offline"
+            }`}
+          >
+            {worker?.availability ? "✓" : "○"}
+          </div>
+
+          <div>
+            <strong>
+              {worker?.availability
+                ? "You are Available"
+                : "You are Unavailable"}
+            </strong>
+
+            <p>
+              {worker?.availability
+                ? "Customers can be matched with you for suitable jobs."
+                : "You won't receive new customer job matches."}
+            </p>
+          </div>
+
         </div>
 
-      </section>
+        <button
+          className={`availability-toggle ${
+            worker?.availability ? "active" : ""
+          }`}
+          onClick={toggleAvailability}
+          disabled={availabilityLoading}
+        >
+          <span className="toggle-circle"></span>
 
+          {availabilityLoading
+            ? "Updating..."
+            : worker?.availability
+            ? "Available"
+            : "Unavailable"}
+        </button>
+
+      </div>
 
       {/* ERROR */}
-
       {error && (
         <div className="booking-error">
           ⚠️ {error}
         </div>
       )}
 
-
-      {/* SUMMARY */}
-
-      <section className="worker-stats-grid">
+      {/* STATS */}
+      <div className="worker-stats-grid">
 
         <div className="worker-stat-card">
-          <span>Pending Requests</span>
+          <div className="worker-stat-icon pending">
+            📋
+          </div>
 
-          <strong>
-            {pendingBookings.length}
-          </strong>
-
-          <p>
-            New service requests
-          </p>
+          <div>
+            <span>Pending Requests</span>
+            <strong>{pendingBookings.length}</strong>
+          </div>
         </div>
 
         <div className="worker-stat-card">
-          <span>Active Jobs</span>
+          <div className="worker-stat-icon active">
+            🔧
+          </div>
 
-          <strong>
-            {activeBookings.length}
-          </strong>
-
-          <p>
-            Current assignments
-          </p>
+          <div>
+            <span>Active Jobs</span>
+            <strong>{activeBookings.length}</strong>
+          </div>
         </div>
 
         <div className="worker-stat-card">
-          <span>Completed Jobs</span>
+          <div className="worker-stat-icon completed">
+            ✓
+          </div>
 
-          <strong>
-            {completedBookings.length}
-          </strong>
-
-          <p>
-            Successfully completed
-          </p>
+          <div>
+            <span>Completed Jobs</span>
+            <strong>{completedBookings.length}</strong>
+          </div>
         </div>
 
         <div className="worker-stat-card">
-          <span>Rating</span>
+          <div className="worker-stat-icon earnings">
+            ₹
+          </div>
 
-          <strong>
-            ⭐ 4.8
-          </strong>
-
-          <p>
-            Customer rating
-          </p>
+          <div>
+            <span>Total Earnings</span>
+            <strong>₹{earnings}</strong>
+          </div>
         </div>
 
-      </section>
+      </div>
 
-
-      {/* BOOKING REQUESTS */}
-
+      {/* BOOKINGS */}
       <section className="worker-dashboard-section">
 
         <div className="worker-section-header">
-
           <div>
-            <p className="dashboard-label">
-              SERVICE REQUESTS
+            <h2>My Job Requests</h2>
+            <p>
+              Review and manage customer service requests.
             </p>
-
-            <h2>
-              Your bookings
-            </h2>
           </div>
 
-          <button
-            className="worker-refresh-btn"
-            onClick={loadWorkerDashboard}
-          >
-            ↻ Refresh
-          </button>
-
+          <span className="worker-booking-count">
+            {bookings.length} Jobs
+          </span>
         </div>
 
-
-        {loading ? (
-
-          <div className="worker-empty-state">
-            <div>⏳</div>
-
-            <h3>
-              Loading your bookings...
-            </h3>
-
-            <p>
-              Connecting to Sahaayak.
-            </p>
-          </div>
-
-        ) : bookings.length === 0 ? (
-
+        {bookings.length === 0 ? (
           <div className="worker-empty-state">
 
             <div>📭</div>
 
-            <h3>
-              No bookings yet
-            </h3>
+            <h2>No Jobs Yet</h2>
 
             <p>
-              New service requests assigned to
-              you will appear here.
+              New customer requests will automatically appear here
+              when Sahaayak matches you with a suitable service.
             </p>
 
           </div>
-
         ) : (
-
           <div className="worker-bookings-list">
 
             {bookings.map((booking) => (
@@ -396,25 +415,26 @@ function WorkerDashboard() {
                 key={booking._id}
               >
 
-                {/* TOP */}
-
                 <div className="worker-booking-top">
 
-                  <div className="worker-booking-icon">
-                    🛠️
-                  </div>
+                  <div className="worker-booking-main-info">
 
-                  <div className="worker-booking-title">
+                    <div className="worker-booking-icon">
+                      🔧
+                    </div>
 
-                    <h3>
-                      {booking.service?.name ||
-                        "Service Booking"}
-                    </h3>
+                    <div>
+                      <h3>
+                        {booking.service?.name ||
+                          booking.service?.category ||
+                          "Service Request"}
+                      </h3>
 
-                    <p>
-                      {booking.service?.category ||
-                        "Local Service"}
-                    </p>
+                      <p>
+                        Customer:{" "}
+                        {booking.customer?.name || "Customer"}
+                      </p>
+                    </div>
 
                   </div>
 
@@ -423,339 +443,220 @@ function WorkerDashboard() {
                       booking.status
                     )}`}
                   >
-                    {getStatusLabel(
-                      booking.status
-                    )}
+                    {booking.status}
                   </span>
 
                 </div>
-
-
-                {/* DETAILS */}
 
                 <div className="worker-booking-details">
 
                   <div>
-                    <span>Customer</span>
-
+                    <span>📅 Date</span>
                     <strong>
-                      {booking.customer?.name ||
-                        "Customer"}
+                      {formatDate(booking.scheduledDate)}
                     </strong>
                   </div>
 
                   <div>
-                    <span>Date</span>
-
+                    <span>💰 Price</span>
                     <strong>
-                      {formatDate(
-                        booking.scheduledDate
-                      )}
+                      ₹{booking.price || 0}
                     </strong>
                   </div>
 
                   <div>
-                    <span>Time</span>
-
+                    <span>📍 Address</span>
                     <strong>
-                      {formatTime(
-                        booking.scheduledDate
-                      )}
-                    </strong>
-                  </div>
-
-                  <div>
-                    <span>Price</span>
-
-                    <strong>
-                      ₹{booking.price}
+                      {booking.address || "Address unavailable"}
                     </strong>
                   </div>
 
                 </div>
-
-
-                {/* ADDRESS */}
-
-                <div className="worker-booking-address">
-
-                  <span>
-                    📍 Service Address
-                  </span>
-
-                  <strong>
-                    {booking.address}
-                  </strong>
-
-                </div>
-
-
-                {/* DESCRIPTION */}
 
                 {booking.description && (
-
-                  <p className="worker-booking-description">
-                    <strong>
-                      Request:
-                    </strong>{" "}
-                    {booking.description}
-                  </p>
-
+                  <div className="worker-booking-description">
+                    <span>Customer Details</span>
+                    <p>{booking.description}</p>
+                  </div>
                 )}
 
+                {booking.status === "pending" && (
+                  <div className="worker-booking-actions">
 
-                {/* ACTIONS */}
+                    <button
+                      className="worker-reject-btn"
+                      disabled={actionLoading}
+                      onClick={() =>
+                        updateBookingStatus(
+                          booking._id,
+                          "reject"
+                        )
+                      }
+                    >
+                      Reject
+                    </button>
 
-                <div className="worker-booking-actions">
-
-                  {booking.status ===
-                    "pending" && (
-                    <>
-                      <button
-                        className="worker-accept-btn"
-                        disabled={
-                          actionLoading ===
-                          booking._id
-                        }
-                        onClick={() =>
-                          updateBooking(
-                            booking._id,
-                            "accept"
-                          )
-                        }
-                      >
-                        {actionLoading ===
-                        booking._id
-                          ? "Processing..."
-                          : "✓ Accept Request"}
-                      </button>
-
-                      <button
-                        className="worker-reject-btn"
-                        disabled={
-                          actionLoading ===
-                          booking._id
-                        }
-                        onClick={() =>
-                          updateBooking(
-                            booking._id,
-                            "reject"
-                          )
-                        }
-                      >
-                        ✕ Reject
-                      </button>
-                    </>
-                  )}
-
-                  {booking.status ===
-                    "accepted" && (
                     <button
                       className="worker-accept-btn"
-                      disabled={
-                        actionLoading ===
-                        booking._id
-                      }
+                      disabled={actionLoading}
                       onClick={() =>
-                        updateBooking(
+                        updateBookingStatus(
+                          booking._id,
+                          "accept"
+                        )
+                      }
+                    >
+                      ✓ Accept Job
+                    </button>
+
+                  </div>
+                )}
+
+                {booking.status === "accepted" && (
+                  <div className="worker-booking-actions">
+
+                    <button
+                      className="worker-accept-btn"
+                      disabled={actionLoading}
+                      onClick={() =>
+                        updateBookingStatus(
                           booking._id,
                           "in-progress"
                         )
                       }
                     >
-                      {actionLoading ===
-                      booking._id
-                        ? "Updating..."
-                        : "▶ Start Job"}
+                      🔧 Start Job
                     </button>
-                  )}
 
-                  {booking.status ===
-                    "in-progress" && (
+                  </div>
+                )}
+
+                {booking.status === "in-progress" && (
+                  <div className="worker-booking-actions">
+
                     <button
                       className="worker-accept-btn"
-                      disabled={
-                        actionLoading ===
-                        booking._id
-                      }
+                      disabled={actionLoading}
                       onClick={() =>
-                        updateBooking(
+                        updateBookingStatus(
                           booking._id,
                           "completed"
                         )
                       }
                     >
-                      {actionLoading ===
-                      booking._id
-                        ? "Updating..."
-                        : "✓ Complete Job"}
+                      ✓ Mark Completed
                     </button>
-                  )}
 
-                  {booking.status ===
-                    "completed" && (
-                    <span className="job-completed-label">
-                      ✓ Job completed successfully
-                    </span>
-                  )}
+                  </div>
+                )}
 
-                  {booking.status ===
-                    "rejected" && (
-                    <span className="job-rejected-label">
-                      Request rejected
-                    </span>
-                  )}
+                {booking.status === "completed" && (
+                  <div className="job-completed-label">
+                    ✓ Job Completed Successfully
+                  </div>
+                )}
 
-                </div>
+                {booking.status === "rejected" && (
+                  <div className="job-rejected-label">
+                    Request rejected
+                  </div>
+                )}
+
+                {booking.status === "cancelled" && (
+                  <div className="job-rejected-label">
+                    Booking cancelled
+                  </div>
+                )}
 
               </div>
 
             ))}
 
           </div>
-
         )}
 
       </section>
 
-
       {/* EARNINGS */}
+      <section className="worker-earnings-card">
 
-      <section className="worker-dashboard-section">
-
-        <div className="worker-section-header">
-
-          <div>
-            <p className="dashboard-label">
-              EARNINGS
-            </p>
-
-            <h2>
-              Your earnings overview
-            </h2>
-          </div>
-
+        <div>
+          <p>YOUR EARNINGS</p>
+          <h2>₹{earnings}</h2>
+          <span>
+            Based on completed Sahaayak jobs
+          </span>
         </div>
 
-        <div className="worker-earnings-card">
-
-          <div>
-            <span>
-              Completed jobs this month
-            </span>
-
-            <strong>
-              {completedBookings.length}
-            </strong>
-          </div>
-
-          <div>
-            <span>
-              Service earnings
-            </span>
-
-            <strong>
-              ₹
-              {completedBookings.reduce(
-                (total, booking) =>
-                  total +
-                  (booking.price || 0),
-                0
-              )}
-            </strong>
-          </div>
-
-          <div>
-            <span>
-              Current rating
-            </span>
-
-            <strong>
-              ⭐ 4.8
-            </strong>
-          </div>
-
+        <div className="earnings-icon">
+          💰
         </div>
 
       </section>
-
 
       {/* WELFARE */}
+      <section className="worker-welfare-banner">
 
-      <section className="worker-dashboard-section">
-
-        <div className="worker-section-header">
-
-          <div>
-            <p className="dashboard-label">
-              WORKER WELFARE
-            </p>
-
-            <h2>
-              Your benefits & support
-            </h2>
-          </div>
-
+        <div className="worker-welfare-icon">
+          🛡️
         </div>
 
-        <div className="worker-welfare-grid">
+        <div>
+          <h2>Worker Welfare & Benefits</h2>
 
-          <div className="worker-welfare-card">
-
-            <div>
-              🎓
-            </div>
-
-            <h3>
-              Training & Skills
-            </h3>
-
-            <p>
-              Access skill development and
-              service training programs.
-            </p>
-
-          </div>
-
-          <div className="worker-welfare-card">
-
-            <div>
-              🛡️
-            </div>
-
-            <h3>
-              Insurance & Protection
-            </h3>
-
-            <p>
-              Explore available insurance and
-              worker protection benefits.
-            </p>
-
-          </div>
-
-          <div className="worker-welfare-card">
-
-            <div>
-              🏛️
-            </div>
-
-            <h3>
-              Government Schemes
-            </h3>
-
-            <p>
-              Discover government welfare
-              schemes you may be eligible for.
-            </p>
-
-          </div>
-
+          <p>
+            Explore government schemes, insurance,
+            pension and skill-development resources.
+          </p>
         </div>
+
+        <a
+          href="/worker-welfare"
+          className="worker-welfare-btn"
+        >
+          Explore Benefits →
+        </a>
 
       </section>
 
-    </main>
+      {/* PROFILE */}
+      <section className="worker-profile-action-card">
+
+        <div>
+          <h2>Keep Your Profile Updated</h2>
+
+          <p>
+            Accurate skills, experience and service radius
+            help Sahaayak match you with better jobs.
+          </p>
+        </div>
+
+        <a
+          href="/worker-profile"
+          className="worker-profile-action-btn"
+        >
+          View & Edit Profile →
+        </a>
+
+      </section>
+
+      {/* TRUST */}
+      <div className="worker-trust-strip">
+
+        <span>🛡️</span>
+
+        <div>
+          <strong>Smart & Trusted Matching</strong>
+
+          <p>
+            Sahaayak matches customers with verified workers
+            based on service type, availability, location and rating.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
   );
 }
 

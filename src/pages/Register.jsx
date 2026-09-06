@@ -85,7 +85,14 @@ function Register() {
       }
 
       alert("Registration successful! Please login.");
-
+      if (role === "worker") {
+  localStorage.setItem(
+    "pendingWorkerProfile",
+    JSON.stringify({
+      occupation: formData.occupation,
+    })
+  );
+}
       window.location.href = "/login";
     } catch (error) {
       console.error("Registration error:", error);
