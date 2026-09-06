@@ -45,6 +45,16 @@ const userSchema = new mongoose.Schema(
     },
 
     // ======================================
+    // COOPERATIVE
+    // ======================================
+
+    cooperative: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Cooperative",
+      default: null,
+    },
+
+    // ======================================
     // WORKER PROFILE INFORMATION
     // ======================================
 
@@ -151,6 +161,9 @@ const userSchema = new mongoose.Schema(
 
 // For geo-location based worker matching
 userSchema.index({ location: "2dsphere" });
+
+// For cooperative-based worker management
+userSchema.index({ cooperative: 1 });
 
 const User = mongoose.model("User", userSchema);
 

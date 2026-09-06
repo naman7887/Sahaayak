@@ -1,4 +1,5 @@
 const express = require("express");
+const router = express.Router();
 
 const {
   createBooking,
@@ -12,52 +13,21 @@ const {
 } = require("../controllers/booking.controller");
 
 const protect = require("../middleware/auth.middleware");
-const authorizeRoles = require("../middleware/role.middleware");
 
-const router = express.Router();
-
-// All booking APIs require authentication
+// All booking routes require authentication
 router.use(protect);
 
-// Customer APIs
-router.post(
-  "/",
-  authorizeRoles("customer"),
-  createBooking
-);
+// Customer
+router.post("/", createBooking);
+router.get("/my", getMyBookings);
+router.patch("/:id/cancel", cancelBooking);
 
-router.get(
-  "/my",
-  authorizeRoles("customer"),
-  getMyBookings
-);
+// Worker
+router.get("/worker", getWorkerBookings);
+router.patch("/:id/accept", acceptBooking);
+router.patch("/:id/reject", rejectBooking);
 
-router.patch(
-  "/:id/cancel",
-  authorizeRoles("customer"),
-  cancelBooking
-);
-
-// Worker APIs
-router.get(
-  "/worker",
-  authorizeRoles("worker"),
-  getWorkerBookings
-);
-
-router.patch(
-  "/:id/accept",
-  authorizeRoles("worker"),
-  acceptBooking
-);
-
-router.patch(
-  "/:id/reject",
-  authorizeRoles("worker"),
-  rejectBooking
-);
-
-// Common authenticated API
+// Customer / Worker / Admin
 router.get("/:id", getBookingById);
 router.patch("/:id/status", updateBookingStatus);
 

@@ -36,6 +36,7 @@ const bookingSchema = new mongoose.Schema(
         type: String,
         enum: ["Point"],
         default: "Point",
+        required: true,
       },
       coordinates: {
         type: [Number],
@@ -51,8 +52,20 @@ const bookingSchema = new mongoose.Schema(
 
     price: {
       type: Number,
-      required: true,
       min: 0,
+      default: 0,
+    },
+
+    // Emergency booking support
+    isEmergency: {
+      type: Boolean,
+      default: false,
+    },
+
+    priority: {
+      type: String,
+      enum: ["normal", "high", "urgent"],
+      default: "normal",
     },
 
     status: {
@@ -73,6 +86,9 @@ const bookingSchema = new mongoose.Schema(
   }
 );
 
-bookingSchema.index({ location: "2dsphere" });
+// Geospatial index for nearby-worker matching
+bookingSchema.index({
+  location: "2dsphere",
+});
 
 module.exports = mongoose.model("Booking", bookingSchema);
