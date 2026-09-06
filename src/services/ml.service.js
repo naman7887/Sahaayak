@@ -3,71 +3,66 @@ const axios = require("axios");
 const ML_SERVICE_URL =
   process.env.ML_SERVICE_URL || "http://localhost:8000";
 
-// Check ML service availability
 const checkMLService = async () => {
-  try {
-    const response = await axios.get(`${ML_SERVICE_URL}/health`, {
-      timeout: 5000,
-    });
+  const response = await axios.get(`${ML_SERVICE_URL}/health`);
 
-    return {
-      available: true,
-      data: response.data,
-    };
-  } catch (error) {
-    return {
-      available: false,
-      message: "ML service is currently unavailable",
-    };
-  }
+  return response.data;
 };
 
-// Demand forecasting
-const forecastDemand = async (payload) => {
-  try {
-    const response = await axios.post(
-      `${ML_SERVICE_URL}/forecast`,
-      payload,
-      {
-        timeout: 15000,
-      }
-    );
+const forecastDemand = async (forecastData) => {
+  const response = await axios.post(
+    `${ML_SERVICE_URL}/forecast`,
+    forecastData
+  );
 
-    return response.data;
-  } catch (error) {
-    console.error(
-      "ML demand forecasting error:",
-      error.message
-    );
-
-    throw new Error("Demand forecasting service unavailable");
-  }
+  return response.data;
 };
 
-// Workforce allocation
-const allocateWorkforce = async (payload) => {
-  try {
-    const response = await axios.post(
-      `${ML_SERVICE_URL}/allocate`,
-      payload,
-      {
-        timeout: 15000,
-      }
-    );
+const allocateWorkforce = async (allocationData) => {
+  const response = await axios.post(
+    `${ML_SERVICE_URL}/allocate`,
+    allocationData
+  );
 
-    return response.data;
-  } catch (error) {
-    console.error(
-      "ML workforce allocation error:",
-      error.message
-    );
+  return response.data;
+};
 
-    throw new Error("Workforce allocation service unavailable");
-  }
+const planWorkforce = async (data) => {
+  // Step 1: Forecast demand
+  const forecast = await forecastDemand({
+    city: data.city,
+    state: data.state,
+    service: data.service,
+    date: data.date,
+    workers_available: data.available_workers || 0,
+    workers_assigned: data.workers_assigned || 0,
+    bookings: data.bookings || 0,
+    completed_jobs: data.completed_jobs || 0,
+    cancelled_jobs: data.cancelled_jobs || 0,
+    pending_jobs: data.pending_jobs || 0,
+    avg_response_minutes: data.avg_response_minutes || 20
+  });
+
+  // Step 2: Allocate workers based on forecast
+  const allocation = await allocateWorkforce({
+    city: data.city,
+    state: data.state,
+    service: data.service,
+    predicted_bookings: forecast.predicted_bookings,
+    available_workers: data.available_workers || 0,
+    workers_per_booking: data.workers_per_booking || 1
+  });
+
+  return {
+    success: true,
+    forecast,
+    allocation
+  };
 };
 
 module.exports = {
   checkMLService,
   forecastDemand,
   allocateWorkforce,
+  planWorkforce
 };

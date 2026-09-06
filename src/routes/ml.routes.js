@@ -1,28 +1,37 @@
 const express = require("express");
+
 const router = express.Router();
+
+const protect = require("../middleware/auth.middleware");
+const authorizeRoles = require("../middleware/role.middleware");
 
 const {
   getMLHealth,
   getDemandForecast,
   getWorkforceAllocation,
+  getWorkforcePlan
 } = require("../controllers/ml.controller");
 
-const protect = require("../middleware/auth.middleware");
-const authorizeRoles = require("../middleware/role.middleware");
 
-// All ML routes require authentication
+// All ML APIs require admin access
 router.use(protect);
-
-// ML functionality is currently intended for administrators
 router.use(authorizeRoles("admin"));
 
-// Check ML service availability
+
+// Check ML service
 router.get("/health", getMLHealth);
 
-// AI demand forecasting
+
+// Demand forecasting
 router.post("/forecast", getDemandForecast);
 
-// AI workforce allocation
+
+// Workforce allocation
 router.post("/allocate", getWorkforceAllocation);
+
+
+// Combined demand forecasting + workforce allocation
+router.post("/workforce-plan", getWorkforcePlan);
+
 
 module.exports = router;

@@ -2993,3 +2993,21 @@ AI-based demand forecasting integration
 AI-based workforce allocation integration
 
 The AI/ML endpoints provide the integration layer for the Python machine-learning service. Actual demand forecasting and workforce allocation predictions depend on the deployed ML service and trained models.
+
+### 84. Combined Workforce Planning
+
+**POST /api/ml/workforce-plan**
+
+Access: Authenticated Admin
+
+#### Body
+
+```json
+{
+  "city": "Delhi",
+  "state": "Delhi",
+  "service": "Electrical",
+  "date": "2026-09-11",
+  "available_workers": 15,
+  "workers_per_booking": 1
+}
