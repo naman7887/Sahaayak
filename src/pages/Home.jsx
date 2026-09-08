@@ -1,102 +1,282 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 function Home() {
+  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+
+  const categories = [
+    ["🔧", "Electrician"],
+    ["🚰", "Plumber"],
+    ["🪚", "Carpenter"],
+    ["🎨", "Painter"],
+    ["🧹", "Cleaning"],
+    ["❄️", "AC Repair"],
+    ["🌱", "Gardening"],
+    ["🧱", "Mason"],
+  ];
+
+  const searchService = () => {
+    if (search.trim()) {
+      navigate(`/find-services?search=${encodeURIComponent(search.trim())}`);
+    } else {
+      navigate("/find-services");
+    }
+  };
+
   return (
-    <main>
+    <main className="sahaayak-home">
 
-      {/* Hero Section */}
-      <section className="hero">
-        <div className="hero-content">
+      {/* HERO */}
+      <section className="sahaayak-home-hero">
+        <div className="sahaayak-hero-inner">
 
-          <p className="hero-tag">
-            Your community. Your services. Your Sahaayak.
-          </p>
+          <div className="sahaayak-hero-content">
+            <p className="sahaayak-hero-kicker">
+              YOUR COMMUNITY. YOUR SERVICES. YOUR SAHAAYAK.
+            </p>
 
-          <h1>
-            Find trusted services
-            <span> near you.</span>
-          </h1>
+            <h1>
+              Reliable help.
+              <br />
+              <span>Right when you need it.</span>
+            </h1>
 
-          <p className="hero-description">
-            Connect with skilled local service providers for your
-            everyday needs — quickly, safely and conveniently.
-          </p>
+            <p className="sahaayak-hero-description">
+              Trusted local professionals for your everyday
+              household and community needs.
+            </p>
 
-          <div className="search-box">
-            <input
-              type="text"
-              placeholder="What service are you looking for?"
-            />
+            <div className="sahaayak-search">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") searchService();
+                }}
+                placeholder="What do you need?"
+              />
 
-            <button>
-              Search
+              <button onClick={searchService}>
+                🔍
+              </button>
+            </div>
+
+            <button
+              className="sahaayak-find-btn"
+              onClick={() => navigate("/find-services")}
+            >
+              Find a Sahaayak
+              <span>→</span>
             </button>
           </div>
 
-          <div className="hero-actions">
-            <button className="primary-action">
-              Find a Service
-            </button>
-
-            <button className="secondary-action">
-              Become a Service Provider
-            </button>
+          {/* NEW ILLUSTRATION */}
+          <div className="sahaayak-hero-visual">
+            <img
+              src="/sahaayak-handyman.png"
+              alt="Sahaayak service professional"
+              className="sahaayak-handyman-image"
+            />
           </div>
 
         </div>
       </section>
 
 
-      {/* Services Section */}
-      <section className="services-section">
+      {/* SERVICES */}
+      <section className="sahaayak-services">
 
-        <div className="section-heading">
+        <div className="sahaayak-section-heading">
           <p>EXPLORE</p>
-          <h2>Popular Services</h2>
+
+          <h2>What can we help with?</h2>
+
           <span>
-            Find skilled people for your everyday needs.
+            Find skilled professionals for your everyday needs.
           </span>
         </div>
 
-        <div className="services-grid">
 
-          <div className="service-card">
-            <div className="service-icon">🔧</div>
-            <h3>Repair & Maintenance</h3>
-            <p>Get help with repairs and maintenance.</p>
+        <div className="sahaayak-category-grid">
+
+          {categories.map(([icon, name]) => (
+            <button
+              key={name}
+              className="sahaayak-category"
+              onClick={() =>
+                navigate(
+                  `/find-services?search=${encodeURIComponent(name)}`
+                )
+              }
+            >
+
+              <span className="sahaayak-category-icon">
+                {icon}
+              </span>
+
+              <div className="sahaayak-category-info">
+                <strong>{name}</strong>
+
+                <small>
+                  Find professionals
+                  <span className="category-arrow">→</span>
+                </small>
+              </div>
+
+            </button>
+          ))}
+
+        </div>
+
+      </section>
+
+
+      {/* WHY SAHAAYAK */}
+      <section className="sahaayak-why">
+
+        <div className="sahaayak-section-heading">
+          <p>WHY SAHAAYAK?</p>
+
+          <h2>Built around trust.</h2>
+
+          <span>
+            Better services for customers. Better opportunities for workers.
+          </span>
+        </div>
+
+        <div className="sahaayak-why-grid">
+
+          <div className="sahaayak-why-card">
+            <div>🤖</div>
+            <h3>Smart Matching</h3>
+            <p>
+              Find suitable workers based on service,
+              location and availability.
+            </p>
           </div>
 
-          <div className="service-card">
-            <div className="service-icon">🏠</div>
-            <h3>Home Services</h3>
-            <p>Reliable help for your household needs.</p>
+          <div className="sahaayak-why-card">
+            <div>📍</div>
+            <h3>Nearby Workers</h3>
+            <p>
+              Connect with service providers available
+              around your location.
+            </p>
           </div>
 
-          <div className="service-card">
-            <div className="service-icon">⚡</div>
-            <h3>Electrical</h3>
-            <p>Find skilled electrical service providers.</p>
+          <div className="sahaayak-why-card">
+            <div>🛡️</div>
+            <h3>Verified Providers</h3>
+            <p>
+              Discover trusted professionals through
+              worker verification.
+            </p>
           </div>
 
-          <div className="service-card">
-            <div className="service-icon">🚚</div>
-            <h3>Delivery</h3>
-            <p>Local delivery and transportation services.</p>
+          <div className="sahaayak-why-card">
+            <div>⭐</div>
+            <h3>Rated Workers</h3>
+            <p>
+              Make better choices using customer ratings
+              and completed jobs.
+            </p>
           </div>
 
-          <div className="service-card">
-            <div className="service-icon">🧹</div>
-            <h3>Cleaning</h3>
-            <p>Find trusted cleaning professionals.</p>
-          </div>
-
-          <div className="service-card">
-            <div className="service-icon">💻</div>
-            <h3>Digital Services</h3>
-            <p>Get help with digital and technical work.</p>
+          <div className="sahaayak-why-card">
+            <div>🤝</div>
+            <h3>Fair Opportunities</h3>
+            <p>
+              Help local workers access more service
+              opportunities in their communities.
+            </p>
           </div>
 
         </div>
 
       </section>
+
+
+      {/* HOW IT WORKS */}
+      <section className="sahaayak-how">
+
+        <div className="sahaayak-section-heading">
+          <p>HOW IT WORKS</p>
+          <h2>Simple from start to finish.</h2>
+        </div>
+
+        <div className="sahaayak-steps">
+
+          <div className="sahaayak-step">
+            <span>01</span>
+            <div>
+              <h3>Choose a service</h3>
+              <p>Tell us what kind of help you need.</p>
+            </div>
+          </div>
+
+          <div className="sahaayak-step-arrow">→</div>
+
+          <div className="sahaayak-step">
+            <span>02</span>
+            <div>
+              <h3>Smart matching</h3>
+              <p>Sahaayak finds suitable nearby workers.</p>
+            </div>
+          </div>
+
+          <div className="sahaayak-step-arrow">→</div>
+
+          <div className="sahaayak-step">
+            <span>03</span>
+            <div>
+              <h3>Get it done</h3>
+              <p>Book the service and get your work completed.</p>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+
+      {/* CTA */}
+      <section className="sahaayak-cta">
+
+        <div>
+          <p>SAHAAYAK</p>
+
+          <h2>
+            Built for customers.
+            <br />
+            Built for local workers.
+          </h2>
+        </div>
+
+        <div className="sahaayak-cta-actions">
+  <button onClick={() => navigate("/find-services")}>
+    Find a Service
+  </button>
+
+  <span className="sahaayak-cta-divider">|</span>
+
+  <button onClick={() => navigate("/register")}>
+    Become a Worker
+  </button>
+</div>
+
+      </section>
+
+
+      {/* FOOTER */}
+      <footer className="sahaayak-footer">
+        <strong>SAHAAYAK</strong>
+
+        <span>
+          Connecting communities with trusted local services.
+        </span>
+      </footer>
 
     </main>
   );
