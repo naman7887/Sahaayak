@@ -10,6 +10,7 @@ const {
   getMyTraining,
   updateMyTrainingStatus,
   cancelMyTraining,
+  getWorkerTrainingsForAdmin,
 } = require("../controllers/workerTraining.controller");
 
 // ======================================
