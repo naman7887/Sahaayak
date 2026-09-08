@@ -4,6 +4,7 @@ const {
   getDashboardStats,
   getWorkers,
   updateWorkerVerification,
+  getWorkerWelfareDetails,
 } = require("../controllers/admin.controller");
 
 const protect = require("../middleware/auth.middleware");
@@ -15,11 +16,32 @@ const router = express.Router();
 router.use(protect);
 router.use(authorizeRoles("admin"));
 
-// Admin dashboard
+// ======================================
+// ADMIN DASHBOARD
+// ======================================
+
 router.get("/dashboard", getDashboardStats);
 
-// Worker management
+// ======================================
+// WORKER MANAGEMENT
+// ======================================
+
 router.get("/workers", getWorkers);
-router.patch("/workers/:id/verification", updateWorkerVerification);
+
+router.patch(
+  "/workers/:id/verification",
+  updateWorkerVerification
+);
+
+// ======================================
+// WORKER WELFARE
+// ======================================
+
+// Get salary, training, insurance and scheme
+// information for a specific worker
+router.get(
+  "/workers/:workerId/welfare",
+  getWorkerWelfareDetails
+);
 
 module.exports = router;
