@@ -2,6 +2,7 @@ const express = require("express");
 
 const {
   createWorkerProfile,
+  getAllWorkers,
   getMyWorkerProfile,
   updateWorkerProfile,
   updateAvailability
@@ -13,7 +14,22 @@ const authorizeRoles = require("../middleware/role.middleware");
 const router = express.Router();
 
 
-// Worker profile
+// ======================================
+// ADMIN - GET ALL WORKERS
+// ======================================
+
+router.get(
+  "/",
+  protect,
+  authorizeRoles("admin"),
+  getAllWorkers
+);
+
+
+// ======================================
+// WORKER PROFILE
+// ======================================
+
 router.post(
   "/profile",
   protect,
@@ -21,14 +37,12 @@ router.post(
   createWorkerProfile
 );
 
-
 router.get(
   "/profile",
   protect,
   authorizeRoles("worker"),
   getMyWorkerProfile
 );
-
 
 router.put(
   "/profile",
@@ -38,7 +52,10 @@ router.put(
 );
 
 
-// Availability
+// ======================================
+// WORKER AVAILABILITY
+// ======================================
+
 router.patch(
   "/availability",
   protect,

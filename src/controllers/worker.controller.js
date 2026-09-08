@@ -79,6 +79,74 @@ const createWorkerProfile = async (req, res) => {
 
 
 // ======================================
+// GET ALL WORKERS - ADMIN
+// ======================================
+
+const getAllWorkers = async (req, res) => {
+  try {
+    // Only admins should access the complete worker list
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Only administrators can view all workers"
+      });
+    }
+
+    const workers = await Worker.find()
+      .populate(
+        "user",
+        "name email phone language isVerified isActive role"
+      )
+      .sort({ createdAt: -1 });
+
+    const formattedWorkers = workers.map((worker) => ({
+      _id: worker._id,
+
+      // Worker profile fields
+      occupation: worker.occupation || "",
+      skills: worker.skills || [],
+      experience: worker.experience || 0,
+      certifications: worker.certifications || [],
+      serviceRadius: worker.serviceRadius || 10,
+      location: worker.location || null,
+      availability: worker.availability || false,
+
+      // Verification information
+      verificationStatus:
+        worker.verificationStatus || "pending",
+
+      // Statistics
+      rating: worker.rating || 0,
+      totalJobs: worker.totalJobs || 0,
+
+      // User fields
+      name: worker.user?.name || "",
+      email: worker.user?.email || "",
+      phone: worker.user?.phone || "",
+
+      // Keep populated user available for frontend compatibility
+      user: worker.user || null
+    }));
+
+    return res.status(200).json({
+      success: true,
+      count: formattedWorkers.length,
+      workers: formattedWorkers
+    });
+
+  } catch (error) {
+    console.error("Get all workers error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching workers",
+      error: error.message
+    });
+  }
+};
+
+
+// ======================================
 // GET MY WORKER PROFILE
 // ======================================
 
@@ -245,6 +313,7 @@ const updateAvailability = async (req, res) => {
 
 module.exports = {
   createWorkerProfile,
+  getAllWorkers,
   getMyWorkerProfile,
   updateWorkerProfile,
   updateAvailability
