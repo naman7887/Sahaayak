@@ -264,10 +264,24 @@ const cancelTrainingEnrollment = async (
   return enrollment;
 };
 
+// ======================================
+// ADMIN - GET TRAININGS FOR A WORKER
+// ======================================
+
+const getWorkerTrainingsForAdmin = async (workerId) => {
+  return WorkerTraining.find({ workerId })
+    .populate(
+      "trainingProgramId",
+      "title description provider skills duration eligibility certification applicationUrl isFree"
+    )
+    .sort({ createdAt: -1 });
+};
+
 module.exports = {
   enrollWorker,
   getWorkerTrainings,
   getWorkerTrainingById,
   updateTrainingStatus,
   cancelTrainingEnrollment,
+  getWorkerTrainingsForAdmin,
 };

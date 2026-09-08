@@ -151,10 +151,45 @@ const cancelMyTraining = async (req, res) => {
   }
 };
 
+// ======================================
+// ADMIN - GET WORKER TRAININGS
+// ======================================
+
+const getWorkerTrainingsForAdmin = async (req, res) => {
+  try {
+    const {
+      getWorkerTrainingsForAdmin: getWorkerTrainingsForAdminService,
+    } = require("../services/workerTraining.service");
+
+    const trainings =
+      await getWorkerTrainingsForAdminService(
+        req.params.workerId
+      );
+
+    res.status(200).json({
+      success: true,
+      count: trainings.length,
+      trainings,
+    });
+  } catch (error) {
+    console.error(
+      "Get worker trainings for admin error:",
+      error
+    );
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch worker training records",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   enrollInTraining,
   getMyTrainings,
   getMyTraining,
+  getWorkerTrainingsForAdmin,
   updateMyTrainingStatus,
   cancelMyTraining,
 };
